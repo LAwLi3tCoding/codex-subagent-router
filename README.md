@@ -48,23 +48,28 @@ Or clone the repository and run:
 ./install.sh
 ```
 
-The installer:
+### What changes after installation
 
-1. Installs the role files under the user's Codex configuration home.
-2. Adds one managed routing block to the global Codex `AGENTS.md`.
-3. Enables multi-agent support without imposing a shared concurrency limit.
-4. Removes global child model defaults so `default` inherits the live session.
-5. Creates timestamped local backups before replacing existing managed targets.
+- Installs the Luna, Terra, and Sol role definitions in the user's Codex
+  configuration home.
+- Adds one managed routing block to the global Codex `AGENTS.md`, which makes the
+  policy available to every new session.
+- Enables multi-agent support while leaving concurrency and batching decisions to
+  the Codex runtime and parent agent.
+- Removes legacy child-model and fixed-concurrency overrides that conflict with
+  session inheritance and dynamic concurrency. As a result, `default` uses the
+  model and reasoning effort selected for the current session.
+- Normalizes the matching legacy delegation sentence when it imposes a fixed
+  child count.
 
-The installer also normalizes the matching legacy global delegation sentence
-that imposed a fixed child count. Other unrelated guidance remains unchanged.
+### Safety and recovery
 
-Run the installer again after updating the repository. Installation is idempotent
-and preserves unrelated configuration and guidance.
-
-The managed policy is written to the global Codex `AGENTS.md`, so Codex loads it
-automatically in every new session. No shell startup hook or resident process is
-required.
+- Creates timestamped local backups before changing existing managed targets.
+- Changes only the router's managed guidance block, known agent settings, named
+  role files, and the exact supported legacy fixed-count delegation sentence;
+  unrelated configuration and guidance are preserved.
+- Is idempotent, so it can be run again safely after updating the repository.
+- Does not install a shell startup hook or run a resident background process.
 
 ## Verify
 

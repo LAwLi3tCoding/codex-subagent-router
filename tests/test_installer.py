@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import subprocess
 import tempfile
 import tomllib
@@ -78,6 +79,11 @@ class InstallerContractTest(unittest.TestCase):
             self.assertIn("<!-- CODEX-SUBAGENT-ROUTER:START -->", guidance)
             self.assertTrue((codex_home / "agents" / "luna-reasoner.toml").is_file())
             self.assertTrue((codex_home / "agents" / "sol-ultra.toml").is_file())
+            self.assertTrue(
+                (codex_home / "hooks" / "codex_subagent_router_disclosure.py").is_file()
+            )
+            hooks = json.loads((codex_home / "hooks.json").read_text(encoding="utf-8"))
+            self.assertEqual(len(hooks["hooks"]["SubagentStart"]), 1)
 
     def test_install_preserves_unrelated_config_and_enforces_routing_contract(self):
         installer = load_module("router_install", REPO_ROOT / "scripts" / "install.py")
@@ -88,6 +94,7 @@ class InstallerContractTest(unittest.TestCase):
             codex_home.mkdir()
             global_agents = codex_home / "AGENTS.md"
             config = codex_home / "config.toml"
+            hooks_path = codex_home / "hooks.json"
 
             global_agents.write_text(
                 "# Existing guidance\n\n"
@@ -108,6 +115,39 @@ class InstallerContractTest(unittest.TestCase):
                 encoding="utf-8",
             )
             config.chmod(0o600)
+            hooks_path.write_text(
+                json.dumps(
+                    {
+                        "description": "Existing hooks",
+                        "hooks": {
+                            "PreToolUse": [
+                                {
+                                    "matcher": "Bash",
+                                    "hooks": [
+                                        {
+                                            "type": "command",
+                                            "command": "python3 existing_hook.py",
+                                        }
+                                    ],
+                                }
+                            ],
+                            "SubagentStart": [
+                                {
+                                    "matcher": "worker",
+                                    "hooks": [
+                                        {
+                                            "type": "command",
+                                            "command": "python3 existing_subagent_hook.py",
+                                        }
+                                    ],
+                                }
+                            ],
+                        },
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
 
             installer.install(REPO_ROOT, codex_home, global_agents)
 
@@ -148,6 +188,19 @@ class InstallerContractTest(unittest.TestCase):
             self.assertEqual(installed_guidance.count(installer.BLOCK_START), 1)
             self.assertEqual(installed_guidance.count(installer.BLOCK_END), 1)
 
+            installed_hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
+            self.assertEqual(installed_hooks["description"], "Existing hooks")
+            self.assertEqual(len(installed_hooks["hooks"]["PreToolUse"]), 1)
+            subagent_groups = installed_hooks["hooks"]["SubagentStart"]
+            self.assertEqual(len(subagent_groups), 2)
+            managed_commands = [
+                handler["command"]
+                for group in subagent_groups
+                for handler in group["hooks"]
+                if "codex_subagent_router_disclosure.py" in handler["command"]
+            ]
+            self.assertEqual(len(managed_commands), 1)
+
             verifier = load_module("router_verify_install", REPO_ROOT / "scripts" / "verify.py")
             policy_path = REPO_ROOT / "policy" / "subagent-routing.md"
             self.assertEqual(
@@ -184,9 +237,47 @@ class InstallerContractTest(unittest.TestCase):
 
             first_config = config.read_text(encoding="utf-8")
             first_guidance = installed_guidance
+            first_hooks = hooks_path.read_text(encoding="utf-8")
             installer.install(REPO_ROOT, codex_home, global_agents)
             self.assertEqual(config.read_text(encoding="utf-8"), first_config)
             self.assertEqual(global_agents.read_text(encoding="utf-8"), first_guidance)
+            self.assertEqual(hooks_path.read_text(encoding="utf-8"), first_hooks)
+
+    def test_subagent_start_hook_discloses_runtime_model_and_reasoning(self):
+        installer = load_module("router_install_hook", REPO_ROOT / "scripts" / "install.py")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            global_agents = codex_home / "AGENTS.md"
+            installer.install(REPO_ROOT, codex_home, global_agents)
+            hook = codex_home / "hooks" / "codex_subagent_router_disclosure.py"
+
+            cases = (
+                (
+                    {"hook_event_name": "SubagentStart", "agent_type": "sol-xhigh", "model": "runtime-model"},
+                    "Subagent started | role: sol-xhigh | model: runtime-model | reasoning: xhigh",
+                ),
+                (
+                    {"hook_event_name": "SubagentStart", "agent_type": "default", "model": "parent-model"},
+                    "Subagent started | role: default | model: parent-model | reasoning: inherited from parent",
+                ),
+                (
+                    {"hook_event_name": "SubagentStart", "agent_type": "worker", "model": "runtime-model"},
+                    "Subagent started | role: worker | model: runtime-model | reasoning: runtime-selected (not exposed by SubagentStart)",
+                ),
+            )
+            for payload, expected in cases:
+                with self.subTest(role=payload["agent_type"]):
+                    result = subprocess.run(
+                        ["python3", str(hook)],
+                        input=json.dumps(payload),
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    output = json.loads(result.stdout)
+                    self.assertEqual(output["systemMessage"], expected)
 
     def test_quoted_and_dotted_concurrency_keys_are_removed(self):
         installer = load_module("router_install_key_forms", REPO_ROOT / "scripts" / "install.py")
@@ -217,6 +308,110 @@ class InstallerContractTest(unittest.TestCase):
                 self.assertTrue(parsed["agents"]["enabled"])
                 self.assertNotIn("max_concurrent_threads_per_session", parsed["agents"])
                 self.assertNotIn("max_threads", parsed["agents"])
+
+    def test_existing_features_table_forms_are_updated_without_duplication(self):
+        installer = load_module("router_install_feature_forms", REPO_ROOT / "scripts" / "install.py")
+        cases = {
+            "quoted-table": '["features"]\nhooks = false\nweb_search = true\n',
+            "inline-table": 'features = { hooks = false, web_search = true }\n',
+            "dotted-table": 'features.web_search = true\n',
+        }
+
+        for name, initial_config in cases.items():
+            with self.subTest(name=name):
+                updated = installer.update_hooks_feature_config(initial_config)
+                parsed = tomllib.loads(updated)
+                self.assertTrue(parsed["features"]["hooks"])
+                self.assertTrue(parsed["features"]["web_search"])
+
+        inline_with_comma = 'features = { hooks = false, label = "a,b" }\n'
+        updated_inline = installer.update_hooks_feature_config(inline_with_comma)
+        self.assertIn('label = "a,b"', updated_inline)
+
+        nested_dotted = '[other]\nfeatures.hooks = false\n'
+        updated_nested = installer.update_hooks_feature_config(nested_dotted)
+        parsed_nested = tomllib.loads(updated_nested)
+        self.assertTrue(parsed_nested["features"]["hooks"])
+        self.assertFalse(parsed_nested["other"]["features"]["hooks"])
+
+    def test_hook_update_does_not_remove_an_unrelated_same_named_script(self):
+        installer = load_module("router_install_hook_identity", REPO_ROOT / "scripts" / "install.py")
+        unrelated_command = "python3 /other/codex_subagent_router_disclosure.py"
+        existing = json.dumps(
+            {
+                "hooks": {
+                    "SubagentStart": [
+                        {
+                            "matcher": "worker",
+                            "hooks": [
+                                {
+                                    "type": "command",
+                                    "command": unrelated_command,
+                                },
+                                {
+                                    "type": "command",
+                                    "command": "python3 /managed/hooks/codex_subagent_router_disclosure.py",
+                                    "timeout": 5,
+                                    "statusMessage": "Showing subagent model and reasoning",
+                                }
+                            ],
+                        }
+                    ]
+                }
+            }
+        )
+        managed_command = "python3 /managed/hooks/codex_subagent_router_disclosure.py"
+
+        updated = json.loads(installer.update_hooks_config(existing, managed_command))
+        commands = [
+            handler["command"]
+            for group in updated["hooks"]["SubagentStart"]
+            for handler in group["hooks"]
+        ]
+        self.assertIn(unrelated_command, commands)
+        self.assertIn(managed_command, commands)
+        worker_group = updated["hooks"]["SubagentStart"][0]
+        self.assertEqual(worker_group["matcher"], "worker")
+        self.assertEqual(len(worker_group["hooks"]), 2)
+
+    def test_verifier_rejects_corrupted_managed_hook_registration(self):
+        installer = load_module("router_install_hook_verifier", REPO_ROOT / "scripts" / "install.py")
+        verifier = load_module("router_verify_hook_registration", REPO_ROOT / "scripts" / "verify.py")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            global_agents = codex_home / "AGENTS.md"
+            installer.install(REPO_ROOT, codex_home, global_agents)
+            hooks_path = codex_home / "hooks.json"
+            original = json.loads(hooks_path.read_text(encoding="utf-8"))
+            policy_path = REPO_ROOT / "policy" / "subagent-routing.md"
+
+            mutations = {
+                "matcher": lambda handler, group: group.update(matcher="worker"),
+                "type": lambda handler, group: handler.update(type="prompt"),
+                "path": lambda handler, group: handler.update(
+                    command="python3 /wrong/codex_subagent_router_disclosure.py"
+                ),
+                "executable": lambda handler, group: handler.update(
+                    command=handler["command"].replace(
+                        handler["command"].split()[0], "/bin/false", 1
+                    )
+                ),
+                "timeout": lambda handler, group: handler.update(timeout=0),
+            }
+            for name, mutate in mutations.items():
+                with self.subTest(name=name):
+                    candidate = json.loads(json.dumps(original))
+                    group = candidate["hooks"]["SubagentStart"][-1]
+                    handler = group["hooks"][0]
+                    mutate(handler, group)
+                    hooks_path.write_text(
+                        json.dumps(candidate) + "\n", encoding="utf-8"
+                    )
+                    errors = verifier.verify_install(
+                        codex_home, global_agents, policy_path
+                    )
+                    self.assertIn("hooks-config:managed-handler", errors)
 
     def test_shareable_tree_contains_no_machine_or_company_identifiers(self):
         verifier = load_module("router_verify", REPO_ROOT / "scripts" / "verify.py")

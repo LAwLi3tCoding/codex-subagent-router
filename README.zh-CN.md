@@ -29,6 +29,20 @@ Terra 平衡能力与成本；Sol 是旗舰能力层级；`max` 是文档公开�
 Agent 数量、并行或分批方式、最终集成和验证均由父 Agent 根据当前任务和
 运行时实际容量动态决定，不设置共享的固定并发数量。
 
+## 启动信息可见
+
+每次子 Agent 启动时，Codex App 或 CLI 事件流都会显示一条消息：
+
+```text
+Subagent started | role: sol-xhigh | model: gpt-5.6-sol | reasoning: xhigh
+```
+
+模型值直接取自运行时的 `SubagentStart` 事件，因此反映该子 Agent 实际选择
+的模型。具名路由角色的推理强度取自已安装的 TOML 配置。由于该运行时事件
+目前不提供推理强度字段，`default` 会如实显示 `inherited from parent`；没有
+配置强度的内置或未知角色会显示
+`runtime-selected (not exposed by SubagentStart)`，不会猜测具体值。
+
 ## 安装
 
 需要 Python 3.11 或更高版本，以及当前版本的 Codex。
@@ -45,11 +59,18 @@ curl -fsSL https://raw.githubusercontent.com/LAwLi3tCoding/codex-subagent-router
 ./install.sh
 ```
 
+出于安全考虑，Codex 会要求用户对新增或发生变化的命令 Hook 做一次信任
+确认。安装后请启动 Codex CLI，执行 `/hooks`，信任路由器的
+`SubagentStart` Hook，然后重启 App 或 CLI 会话。安装器不会绕过这项官方
+安全机制。
+
 ### 安装后会发生什么
 
 - 将 Luna、Terra 和 Sol 角色定义安装到用户的 Codex 配置目录。
 - 在全局 Codex `AGENTS.md` 中写入一个受管理的路由规则区块，使每个新会话
   都能使用这套路由策略。
+- 安装并启用用户级 `SubagentStart` 生命周期 Hook，在每个子 Agent 启动时
+  显示角色、运行时实际模型，以及已配置或继承的推理强度。
 - 启用多 Agent 能力，并由 Codex 运行时和父 Agent 动态决定并发数量与分批
   方式。
 - 清理与会话继承和动态并发冲突的旧版子 Agent 模型覆盖及固定并发覆盖，使
@@ -62,7 +83,8 @@ curl -fsSL https://raw.githubusercontent.com/LAwLi3tCoding/codex-subagent-router
 - 只修改路由器管理的规则区块、已知 Agent 配置项、具名角色文件，以及精确
   匹配的受支持旧版固定数量委派语句；保留所有无关配置和说明。
 - 安装过程是幂等的，更新仓库后可以安全地再次运行。
-- 不安装 shell 启动 hook，也不运行常驻后台进程。
+- 只安装 Codex 生命周期 Hook；不会修改 shell 启动文件，也不会运行常驻
+  后台进程。
 
 ## 验证
 
@@ -71,12 +93,13 @@ python3 -m unittest discover -s tests -v
 python3 scripts/verify.py
 ```
 
-验证覆盖角色与模型矩阵、`default` 继承、全局受管理规则、配置解析、安装
-幂等性和仓库隐私检查。
+验证覆盖角色与模型矩阵、`default` 继承、全局受管理规则、生命周期 Hook
+注册、配置解析、安装幂等性和仓库隐私检查。
 
 ## 文件结构
 
 - `agents/`：Codex 自定义 Agent 定义。
+- `hooks/`：显示子 Agent 启动信息的生命周期 Hook。
 - `policy/subagent-routing.md`：全局加载的路由策略。
 - `scripts/install.py`：幂等的用户级安装器。
 - `scripts/verify.py`：安装状态和可公开性检查。

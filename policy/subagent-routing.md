@@ -3,6 +3,18 @@
 Apply this policy whenever subagents are available. Work directly when delegation
 would not materially improve speed, quality, isolation, or independent review.
 
+### Visible launch disclosure
+
+- A user-level `SubagentStart` hook reports every child launch in the Codex App
+  UI or CLI event stream as `role`, runtime `model`, and reasoning effort.
+- For named router roles, reasoning comes from the installed role configuration.
+  For `default`, report that reasoning is inherited from the parent rather than
+  guessing a value the runtime event does not expose.
+- For built-in or unknown roles without a configured effort, state that reasoning
+  was runtime-selected and is not exposed by `SubagentStart`. Never invent it.
+- Reinstalling or updating the hook requires the user to review and trust its
+  current definition once through Codex's hook trust flow.
+
 ### Default inheritance
 
 - `default` is the ordinary delegation role.

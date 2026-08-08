@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
+import shlex
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -12,6 +15,8 @@ from pathlib import Path
 
 BLOCK_START = "<!-- CODEX-SUBAGENT-ROUTER:START -->"
 BLOCK_END = "<!-- CODEX-SUBAGENT-ROUTER:END -->"
+HOOK_FILENAME = "codex_subagent_router_disclosure.py"
+HOOK_STATUS = "Showing subagent model and reasoning"
 EXPECTED_ROLES = {
     "default": (None, None),
     "luna-batch": ("gpt-5.6-luna", "medium"),
@@ -101,6 +106,8 @@ def verify_install(
     ):
         if forbidden in agents_config:
             errors.append(f"config:agents.{forbidden}")
+    if config.get("features", {}).get("hooks") is not True:
+        errors.append("config:features.hooks")
 
     for role, expected in EXPECTED_ROLES.items():
         role_path = codex_home / "agents" / f"{role}.toml"
@@ -136,6 +143,82 @@ def verify_install(
                     errors.append("guidance:managed-block-content")
         if any(pattern.search(guidance) for pattern in FIXED_CHILD_CAP_PATTERNS):
             errors.append("guidance:fixed-concurrency-cap")
+
+    hook_path = codex_home / "hooks" / HOOK_FILENAME
+    try:
+        installed_hook = hook_path.read_text(encoding="utf-8")
+    except OSError as error:
+        errors.append(f"hook-script:{error}")
+    else:
+        if policy_path is not None:
+            source_hook = policy_path.parents[1] / "hooks" / HOOK_FILENAME
+            if installed_hook != source_hook.read_text(encoding="utf-8"):
+                errors.append("hook-script:content")
+
+    try:
+        hooks_config = json.loads(
+            (codex_home / "hooks.json").read_text(encoding="utf-8")
+        )
+        groups = hooks_config["hooks"]["SubagentStart"]
+        managed_handlers = []
+        for group in groups:
+            if not isinstance(group, dict) or group.get("matcher") != "*":
+                continue
+            handlers = group.get("hooks", [])
+            if not isinstance(handlers, list):
+                continue
+            for handler in handlers:
+                if not isinstance(handler, dict):
+                    continue
+                if (
+                    handler.get("type") != "command"
+                    or handler.get("statusMessage") != HOOK_STATUS
+                    or handler.get("timeout") != 5
+                ):
+                    continue
+                command_parts = shlex.split(str(handler.get("command", "")))
+                if len(command_parts) != 2:
+                    continue
+                if (
+                    Path(command_parts[0]).expanduser().resolve()
+                    == Path(sys.executable).resolve()
+                    and Path(command_parts[1]).expanduser().resolve()
+                    == hook_path.resolve()
+                ):
+                    managed_handlers.append(handler)
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+        errors.append(f"hooks-config:{error}")
+    else:
+        if len(managed_handlers) != 1:
+            errors.append("hooks-config:managed-handler")
+        else:
+            smoke_payload = {
+                "hook_event_name": "SubagentStart",
+                "agent_type": "sol-xhigh",
+                "model": "runtime-model",
+            }
+            expected_message = (
+                "Subagent started | role: sol-xhigh | model: runtime-model | "
+                "reasoning: xhigh"
+            )
+            try:
+                smoke = subprocess.run(
+                    [sys.executable, str(hook_path)],
+                    input=json.dumps(smoke_payload),
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                smoke_output = json.loads(smoke.stdout)
+            except (OSError, subprocess.SubprocessError, json.JSONDecodeError) as error:
+                errors.append(f"hook-script:smoke:{type(error).__name__}")
+            else:
+                if (
+                    smoke.returncode != 0
+                    or smoke_output.get("systemMessage") != expected_message
+                ):
+                    errors.append("hook-script:smoke")
     return errors
 
 

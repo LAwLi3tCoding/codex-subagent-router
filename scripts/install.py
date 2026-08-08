@@ -4,10 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
+import shlex
 import shutil
 import stat
+import sys
 import tempfile
 import tomllib
 from datetime import datetime, timezone
@@ -16,6 +19,8 @@ from pathlib import Path
 
 BLOCK_START = "<!-- CODEX-SUBAGENT-ROUTER:START -->"
 BLOCK_END = "<!-- CODEX-SUBAGENT-ROUTER:END -->"
+HOOK_FILENAME = "codex_subagent_router_disclosure.py"
+HOOK_STATUS = "Showing subagent model and reasoning"
 MANAGED_AGENT_KEYS = {
     "enabled",
     "max_concurrent_threads_per_session",
@@ -153,6 +158,245 @@ def update_agents_config(content: str) -> str:
     return updated
 
 
+def _split_inline_table_entries(body: str) -> list[str]:
+    entries: list[str] = []
+    start = 0
+    quote: str | None = None
+    escaped = False
+    depth = 0
+    for index, character in enumerate(body):
+        if quote is not None:
+            if quote == '"' and character == "\\" and not escaped:
+                escaped = True
+                continue
+            if character == quote and not escaped:
+                quote = None
+            escaped = False
+            continue
+        if character in {'"', "'"}:
+            quote = character
+        elif character in "[{(":
+            depth += 1
+        elif character in "]})":
+            depth = max(0, depth - 1)
+        elif character == "," and depth == 0:
+            entries.append(body[start:index])
+            start = index + 1
+    entries.append(body[start:])
+    return entries
+
+
+def update_hooks_feature_config(content: str) -> str:
+    if content.strip():
+        tomllib.loads(content)
+    lines = content.splitlines(keepends=True)
+    first_table = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if re.match(r"^\s*\[.+\]\s*(?:#.*)?$", line.rstrip("\r\n"))
+        ),
+        len(lines),
+    )
+    dotted_pattern = re.compile(
+        r"^\s*(?:\"features\"|'features'|features)\s*\.\s*"
+        r"(?:\"(hooks|codex_hooks)\"|'(hooks|codex_hooks)'|(hooks|codex_hooks))\s*="
+    )
+    lines = [
+        line for line in lines[:first_table] if not dotted_pattern.match(line)
+    ] + lines[first_table:]
+    first_table = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if re.match(r"^\s*\[.+\]\s*(?:#.*)?$", line.rstrip("\r\n"))
+        ),
+        len(lines),
+    )
+    inline_pattern = re.compile(
+        r"^(\s*(?:\"features\"|'features'|features)\s*=\s*\{)"
+        r"(.*)(\}\s*(?:#.*)?(?:\r?\n)?)$"
+    )
+    for index in range(first_table):
+        match = inline_pattern.match(lines[index])
+        if not match:
+            continue
+        entries: list[str] = []
+        hooks_written = False
+        for item in _split_inline_table_entries(match.group(2)):
+            item_match = re.match(
+                r"^(?P<leading>\s*)(?:\"(?P<double>[^\"]+)\"|"
+                r"'(?P<single>[^']+)'|(?P<bare>[A-Za-z0-9_-]+))"
+                r"(?P<equals>\s*=\s*)(?P<value>true|false)(?P<trailing>\s*)$",
+                item,
+            )
+            key = (
+                next(
+                    (
+                        item_match.group(name)
+                        for name in ("double", "single", "bare")
+                        if item_match.group(name) is not None
+                    ),
+                    None,
+                )
+                if item_match
+                else None
+            )
+            if key in {"hooks", "codex_hooks"}:
+                if not hooks_written:
+                    if key == "hooks":
+                        value_start, value_end = item_match.span("value")
+                        entries.append(item[:value_start] + "true" + item[value_end:])
+                    else:
+                        entries.append(
+                            item_match.group("leading")
+                            + "hooks"
+                            + item_match.group("equals")
+                            + "true"
+                            + item_match.group("trailing")
+                        )
+                    hooks_written = True
+                continue
+            entries.append(item)
+        if not hooks_written:
+            if any(item.strip() for item in entries):
+                entries.append(" hooks = true")
+            else:
+                entries = [" hooks = true "]
+        lines[index] = match.group(1) + ",".join(entries) + match.group(3)
+        updated = "".join(lines)
+        tomllib.loads(updated)
+        return updated
+
+    section_start = next(
+        (
+            index
+            for index, line in enumerate(lines)
+            if re.match(
+                r"^\s*\[\s*(?:\"features\"|'features'|features)\s*\]"
+                r"\s*(?:#.*)?$",
+                line.rstrip("\r\n"),
+            )
+        ),
+        None,
+    )
+    if section_start is None:
+        first_table = next(
+            (
+                index
+                for index, line in enumerate(lines)
+                if re.match(r"^\s*\[.+\]\s*(?:#.*)?$", line.rstrip("\r\n"))
+            ),
+            len(lines),
+        )
+        prefix = "".join(lines[:first_table]).rstrip()
+        if prefix:
+            prefix += "\n"
+        prefix += "features.hooks = true\n"
+        suffix = "".join(lines[first_table:])
+        if suffix:
+            prefix += "\n"
+        updated = prefix + suffix
+        tomllib.loads(updated)
+        return updated
+
+    section_end = next(
+        (
+            index
+            for index in range(section_start + 1, len(lines))
+            if re.match(r"^\s*\[.+\]\s*(?:#.*)?$", lines[index].rstrip("\r\n"))
+        ),
+        len(lines),
+    )
+    body = [
+        line
+        for line in lines[section_start + 1 : section_end]
+        if _key_name(line) not in {"hooks", "codex_hooks"}
+    ]
+    while body and not body[-1].strip():
+        body.pop()
+    if body:
+        body.append("\n")
+    body.append("hooks = true\n")
+    if section_end < len(lines):
+        body.append("\n")
+    updated = "".join(lines[: section_start + 1] + body + lines[section_end:])
+    tomllib.loads(updated)
+    return updated
+
+
+def _is_managed_hook_handler(handler: object, target_hook: Path) -> bool:
+    if not isinstance(handler, dict):
+        return False
+    if handler.get("type") != "command" or handler.get("statusMessage") != HOOK_STATUS:
+        return False
+    try:
+        command_parts = shlex.split(str(handler.get("command", "")))
+    except ValueError:
+        return False
+    if len(command_parts) != 2:
+        return False
+    return Path(command_parts[1]).expanduser().resolve() == target_hook.resolve()
+
+
+def update_hooks_config(content: str, command: str) -> str:
+    if content.strip():
+        parsed = json.loads(content)
+        if not isinstance(parsed, dict):
+            raise ValueError("hooks.json must contain a JSON object")
+    else:
+        parsed = {"description": "Codex lifecycle hooks"}
+    hooks = parsed.setdefault("hooks", {})
+    if not isinstance(hooks, dict):
+        raise ValueError("hooks.json field 'hooks' must contain a JSON object")
+    groups = hooks.setdefault("SubagentStart", [])
+    if not isinstance(groups, list):
+        raise ValueError("hooks.json SubagentStart must contain a JSON array")
+    command_parts = shlex.split(command)
+    if len(command_parts) != 2:
+        raise ValueError("Managed hook command must contain an interpreter and script")
+    target_hook = Path(command_parts[1])
+
+    preserved_groups: list[object] = []
+    for group in groups:
+        if not isinstance(group, dict):
+            preserved_groups.append(group)
+            continue
+        handlers = group.get("hooks")
+        if not isinstance(handlers, list):
+            preserved_groups.append(group)
+            continue
+        preserved_handlers = (
+            [
+                handler
+                for handler in handlers
+                if not _is_managed_hook_handler(handler, target_hook)
+            ]
+            if group.get("matcher") == "*"
+            else list(handlers)
+        )
+        if preserved_handlers:
+            preserved_group = dict(group)
+            preserved_group["hooks"] = preserved_handlers
+            preserved_groups.append(preserved_group)
+
+    preserved_groups.append(
+        {
+            "matcher": "*",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": command,
+                    "timeout": 5,
+                    "statusMessage": HOOK_STATUS,
+                }
+            ],
+        }
+    )
+    hooks["SubagentStart"] = preserved_groups
+    return json.dumps(parsed, indent=2, ensure_ascii=False) + "\n"
+
+
 def update_guidance(content: str, policy: str) -> str:
     content = LEGACY_CHILD_CAP.sub(LEGACY_CHILD_CAP_REPLACEMENT, content)
     block = f"{BLOCK_START}\n{policy.rstrip()}\n{BLOCK_END}"
@@ -180,7 +424,7 @@ def install(source_root: Path, codex_home: Path, global_agents: Path) -> list[Pa
 
     config_path = codex_home / "config.toml"
     old_config = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
-    new_config = update_agents_config(old_config)
+    new_config = update_hooks_feature_config(update_agents_config(old_config))
     if new_config != old_config:
         _backup(config_path, backup_root, "config.toml")
         _atomic_write(config_path, new_config)
@@ -206,6 +450,24 @@ def install(source_root: Path, codex_home: Path, global_agents: Path) -> list[Pa
         _atomic_write(target, new_content)
         changed.append(target)
 
+    source_hook = source_root / "hooks" / HOOK_FILENAME
+    target_hook = codex_home / "hooks" / HOOK_FILENAME
+    new_hook = source_hook.read_text(encoding="utf-8")
+    old_hook = target_hook.read_text(encoding="utf-8") if target_hook.exists() else None
+    if old_hook != new_hook:
+        _backup(target_hook, backup_root, f"hooks/{HOOK_FILENAME}")
+        _atomic_write(target_hook, new_hook)
+        changed.append(target_hook)
+
+    hooks_path = codex_home / "hooks.json"
+    old_hooks = hooks_path.read_text(encoding="utf-8") if hooks_path.exists() else ""
+    hook_command = f"{shlex.quote(sys.executable)} {shlex.quote(str(target_hook))}"
+    new_hooks = update_hooks_config(old_hooks, hook_command)
+    if new_hooks != old_hooks:
+        _backup(hooks_path, backup_root, "hooks.json")
+        _atomic_write(hooks_path, new_hooks)
+        changed.append(hooks_path)
+
     return changed
 
 
@@ -228,6 +490,7 @@ def main() -> int:
     changed = install(source_root, args.codex_home, global_agents)
     if changed:
         print(f"Installed router; changed {len(changed)} file(s).")
+        print("Review and trust the SubagentStart hook once with /hooks in Codex CLI.")
     else:
         print("Router is already installed and current.")
     return 0

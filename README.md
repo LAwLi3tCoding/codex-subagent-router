@@ -1,5 +1,7 @@
 # Codex Subagent Router
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 A dependency-free, user-level routing policy for Codex subagents. It keeps the
 ordinary `default` agent aligned with the model and reasoning effort selected in
 the current session, while exposing named Luna, Terra, and Sol tiers for work that

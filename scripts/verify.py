@@ -17,17 +17,25 @@ BLOCK_START = "<!-- CODEX-SUBAGENT-ROUTER:START -->"
 BLOCK_END = "<!-- CODEX-SUBAGENT-ROUTER:END -->"
 HOOK_FILENAME = "codex_subagent_router_disclosure.py"
 HOOK_STATUS = "Showing subagent model and reasoning"
-EXPECTED_ROLES = {
-    "default": (None, None),
-    "luna-batch": ("gpt-5.6-luna", "medium"),
-    "luna-reasoner": ("gpt-5.6-luna", "max"),
-    "terra-explorer": ("gpt-5.6-terra", "medium"),
-    "terra-researcher": ("gpt-5.6-terra", "high"),
-    "sol-high": ("gpt-5.6-sol", "high"),
-    "sol-xhigh": ("gpt-5.6-sol", "xhigh"),
-    "sol-max": ("gpt-5.6-sol", "max"),
-    "sol-ultra": ("gpt-5.6-sol", "max"),
+RETIRED_AGENT_ROLES = (
+    "luna-batch",
+    "luna-reasoner",
+    "terra-explorer",
+    "terra-researcher",
+)
+FAMILY_EFFORTS = {
+    "luna": ("low", "medium", "high", "xhigh", "max"),
+    "terra": ("low", "medium", "high", "xhigh", "max", "ultra"),
+    "sol": ("low", "medium", "high", "xhigh", "max", "ultra"),
 }
+EXPECTED_ROLES = {"default": (None, None)}
+for family, efforts in FAMILY_EFFORTS.items():
+    EXPECTED_ROLES.update(
+        {
+            f"{family}-{effort}": (f"gpt-5.6-{family}", effort)
+            for effort in efforts
+        }
+    )
 COUNT = r"(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)"
 AGENT_GROUP = r"(?:children|subagents|agents)"
 AGENT_MODIFIERS = r"(?:(?:concurrent|parallel|spawned)\s+)?"
@@ -85,6 +93,40 @@ def scan_shareable_tree(root: Path) -> list[str]:
     return findings
 
 
+def verify_runtime_model_matrix(models_cache_path: Path) -> list[str]:
+    if not models_cache_path.exists():
+        return []
+    try:
+        payload = json.loads(models_cache_path.read_text(encoding="utf-8"))
+        models = payload["models"]
+        if not isinstance(models, list):
+            raise TypeError("models must be a list")
+        supported = {
+            str(model["slug"]): {
+                str(level["effort"])
+                for level in model["supported_reasoning_levels"]
+                if isinstance(level, dict) and "effort" in level
+            }
+            for model in models
+            if isinstance(model, dict)
+            and "slug" in model
+            and isinstance(model.get("supported_reasoning_levels"), list)
+        }
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+        return [f"runtime-model-cache:{type(error).__name__}"]
+
+    findings: list[str] = []
+    for family, efforts in FAMILY_EFFORTS.items():
+        model = f"gpt-5.6-{family}"
+        if model not in supported:
+            findings.append(f"runtime-model:{model}:missing")
+            continue
+        for effort in efforts:
+            if effort not in supported[model]:
+                findings.append(f"runtime-model:{model}:{effort}")
+    return findings
+
+
 def verify_install(
     codex_home: Path, global_agents: Path, policy_path: Path | None = None
 ) -> list[str]:
@@ -108,6 +150,10 @@ def verify_install(
             errors.append(f"config:agents.{forbidden}")
     if config.get("features", {}).get("hooks") is not True:
         errors.append("config:features.hooks")
+
+    for role in RETIRED_AGENT_ROLES:
+        if (codex_home / "agents" / f"{role}.toml").exists():
+            errors.append(f"agent:{role}:retired")
 
     for role, expected in EXPECTED_ROLES.items():
         role_path = codex_home / "agents" / f"{role}.toml"
@@ -231,6 +277,7 @@ def main() -> int:
     global_agents = args.global_agents or args.codex_home / "AGENTS.md"
 
     errors = [f"shareable:{item}" for item in scan_shareable_tree(source_root)]
+    warnings = verify_runtime_model_matrix(args.codex_home / "models_cache.json")
     errors.extend(
         verify_install(
             args.codex_home,
@@ -238,6 +285,8 @@ def main() -> int:
             source_root / "policy" / "subagent-routing.md",
         )
     )
+    for warning in warnings:
+        print(f"warning:{warning}", file=sys.stderr)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

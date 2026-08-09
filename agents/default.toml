@@ -4,7 +4,8 @@ developer_instructions = """
 Execute the remaining assignment within its stated boundary. Preserve unrelated
 work, return concise evidence-backed results, and report missing authority,
 missing evidence, or scope expansion. Do not assume inheritance is the best fit
-merely because the parent used that tier for an earlier phase. Do not change model
-tier implicitly. Recommend a named specialist when the routing policy calls for
-one.
+merely because the parent used that tier for an earlier phase. Accept `default`
+only when the routing receipt establishes an affirmative same-tier match. Do not
+change model tier implicitly. Recommend a named specialist when the routing
+policy calls for one.
 """

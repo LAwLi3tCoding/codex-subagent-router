@@ -21,6 +21,12 @@ BLOCK_START = "<!-- CODEX-SUBAGENT-ROUTER:START -->"
 BLOCK_END = "<!-- CODEX-SUBAGENT-ROUTER:END -->"
 HOOK_FILENAME = "codex_subagent_router_disclosure.py"
 HOOK_STATUS = "Showing subagent model and reasoning"
+RETIRED_AGENT_ROLES = (
+    "luna-batch",
+    "luna-reasoner",
+    "terra-explorer",
+    "terra-researcher",
+)
 MANAGED_AGENT_KEYS = {
     "enabled",
     "max_concurrent_threads_per_session",
@@ -440,6 +446,13 @@ def install(source_root: Path, codex_home: Path, global_agents: Path) -> list[Pa
 
     target_agents = codex_home / "agents"
     target_agents.mkdir(parents=True, exist_ok=True)
+    for role in RETIRED_AGENT_ROLES:
+        target = target_agents / f"{role}.toml"
+        if not target.exists():
+            continue
+        _backup(target, backup_root, f"agents/{target.name}")
+        target.unlink()
+        changed.append(target)
     for source in sorted((source_root / "agents").glob("*.toml")):
         target = target_agents / source.name
         new_content = source.read_text(encoding="utf-8")

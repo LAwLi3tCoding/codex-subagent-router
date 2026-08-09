@@ -9,15 +9,27 @@ benefits from a deliberate override.
 
 ## Routing model
 
-- `default` inherits the current session model and reasoning effort.
-- `luna-batch` handles clear high-volume work at Medium effort.
-- `luna-reasoner` uses Luna Max only for strictly bounded reasoning with complete
-  inputs and independently mechanically verifiable results.
-- `terra-explorer` and `terra-researcher` handle broad read-heavy work.
-- `sol-high`, `sol-xhigh`, and `sol-max` cover increasingly complex work.
-- `sol-ultra` uses Sol Max as an orchestration leader for exceptional planning or
-  design that divides into multiple independent workstreams. `ultra` is not used
-  as a model reasoning-effort value.
+Routing uses two axes. The model family follows the work mode and authority
+boundary; effort follows the remaining complexity.
+
+- Luna handles closed, cost-sensitive work with a mechanical oracle.
+- Terra handles read-only exploration, research, and evidence synthesis.
+- Sol handles implementation, judgment, verification, architecture, and final
+  high-risk synthesis.
+- `default` still inherits the current session model and effort, but only when the
+  routing receipt proves an affirmative same-tier match.
+
+Canonical roles use `{family}-{effort}` names. This release supports:
+
+| Family | Canonical efforts |
+| --- | --- |
+| Luna | `low`, `medium`, `high`, `xhigh`, `max` |
+| Terra | `low`, `medium`, `high`, `xhigh`, `max`, `ultra` |
+| Sol | `low`, `medium`, `high`, `xhigh`, `max`, `ultra` |
+
+Current Codex runtime metadata describes `ultra` as automatic task delegation. It
+is an orchestration mode for exceptional independently decomposable Sol or Terra
+work, not reasoning depth above `max`, and Luna has no Ultra route.
 
 Luna and Terra may collect, transform, or organize evidence, but they never own
 the final architecture, security, release, migration, or other high-risk decision.
@@ -32,6 +44,19 @@ The global policy keeps delegation selective, requires one-way escalation,
 preserves single-writer boundaries, and leaves concurrency, batching, final
 integration, and verification decisions with the parent agent.
 
+## Routing receipt and precedence
+
+Every child prompt carries a compact routing receipt: remaining work, delegation
+benefit, phase, work mode, closure, risk, complexity signals, independent
+workstreams, selected model and effort, rejected neighboring tiers, and fallback.
+This makes every downgrade, inheritance, and escalation inspectable.
+
+Conflict resolution is fail-closed: split mixed evidence/write/decision/verification
+work into sequential assignments; choose family before effort; require every
+downgrade condition; allow any high-risk signal to block a cheaper route; and never
+treat unknown state as evidence for downgrading. `default` is considered last and
+requires an affirmative same-tier reason.
+
 ## Phase and assignment re-evaluation
 
 Routes are selected from the child's remaining work, not inherited from the
@@ -42,15 +67,29 @@ original task's most difficult phase. The parent re-evaluates the route at
 A completed design is not an automatic reason to lower the tier. The design must
 actually resolve the decisions, interfaces, boundaries, acceptance evidence, and
 prohibited choices the implementer needs. Once it does, a bounded but demanding
-implementation may use `sol-high` even when its parent used XHigh or Max; mechanical
-edits may use Luna, while unresolved cross-module or architectural work remains on
-XHigh or Max.
+implementation may use `sol-low`, `sol-medium`, or `sol-high` even when its parent
+used XHigh or Max; mechanical edits may use the matching Luna effort, while
+unresolved cross-module or architectural work remains on XHigh or Max.
 
 A new, narrower assignment may use a lower tier. Retrying the same unresolved work
 still follows one-way escalation. If the child's scope expands or design gaps
 reappear, it returns the evidence to the parent for re-routing instead of silently
 stretching its role. Verification is routed independently by the risk and judgment
 needed for the completion claim, which remains owned by the parent.
+
+## Runtime compatibility fallback
+
+The local Codex model cache is advisory. A missing effort entry or corrupt, stale,
+incomplete, or absent cache is reported when observable, but it does not fail the
+installer, verifier, delegation, or parent task. The router tries the configured
+role and treats the runtime child-start result as authoritative.
+
+If an `ultra` child is rejected, the router may try the same family at `max` while
+the parent performs orchestration. Other rejected named roles may make one safe
+same-family fallback attempt. The router never silently crosses model families or
+uses `default` to conceal incompatibility. If that attempt fails or no safe
+alternative exists, the parent executes the work directly so routing metadata
+cannot block the user's task.
 
 ## Visible launch details
 
@@ -81,20 +120,14 @@ because Codex task names accept only lowercase letters, digits, and underscores.
 These are text prefixes rather than native App badges. Tags are derived from the
 child's effective model and effort, not its role name. The complete matrix is:
 
-| Effective child model | Effort | Task-name prefix |
+| Effective child family | Efforts | Task-name prefix pattern |
 | --- | --- | --- |
-| `gpt-5.6-luna` | `medium` | `gpt56_luna_medium` |
-| `gpt-5.6-luna` | `max` | `gpt56_luna_max` |
-| `gpt-5.6-terra` | `medium` | `gpt56_terra_medium` |
-| `gpt-5.6-terra` | `high` | `gpt56_terra_high` |
-| `gpt-5.6-sol` | `high` | `gpt56_sol_high` |
-| `gpt-5.6-sol` | `xhigh` | `gpt56_sol_xhigh` |
-| `gpt-5.6-sol` | `max` | `gpt56_sol_max` |
+| `gpt-5.6-luna` | `low` through `max` | `gpt56_luna_<effort>` |
+| `gpt-5.6-terra` | `low` through `max`, `ultra` | `gpt56_terra_<effort>` |
+| `gpt-5.6-sol` | `low` through `max`, `ultra` | `gpt56_sol_<effort>` |
 | Model or effort unavailable before spawn | — | `runtime_selected` |
 
-For example, `sol-max` and `sol-ultra` both currently resolve to Sol Max and
-therefore share `gpt56_sol_max`; the orchestration role isn't added to the model
-label. For `default`, the router uses the parent's effective values only when both
+For `default`, the router uses the parent's effective values only when both
 are available before spawn, otherwise it falls back to `runtime_selected`. The
 lifecycle message remains the runtime check for the model actually selected by
 Codex.
@@ -124,6 +157,8 @@ cannot be safely bypassed by the installer.
 
 - Installs the Luna, Terra, and Sol role definitions in the user's Codex
   configuration home.
+- Removes retired pre-canonical role files during upgrades after including them in
+  the timestamped backup.
 - Adds one managed routing block to the global Codex `AGENTS.md`, which makes the
   policy available to every new session.
 - Installs and enables a user-level `SubagentStart` lifecycle hook that displays
@@ -153,18 +188,22 @@ python3 -m unittest discover -s tests -v
 python3 scripts/verify.py
 ```
 
-Verification checks the exact role/model matrix, default inheritance, managed
-global guidance, lifecycle-hook registration, configuration parsing, idempotence,
-and repository privacy.
+Verification checks the exact role/model/effort matrix, default inheritance,
+routing receipts and synthetic scenarios, managed global guidance, lifecycle-hook
+registration, configuration parsing, idempotence, and repository privacy. When a
+Codex model cache is present, verification reports unsupported family-effort
+combinations or an unreadable cache as advisory warnings. Installed role, policy,
+hook, configuration, and privacy defects still fail verification.
 
 ## Files
 
 - `agents/`: Codex custom agent definitions.
 - `hooks/`: user-visible subagent launch disclosure.
 - `policy/subagent-routing.md`: globally loaded routing policy.
+- `policy/routing-scenarios.json`: synthetic routing-receipt contract cases.
 - `scripts/install.py`: idempotent user-level installer.
 - `scripts/verify.py`: installed-state and shareability checks.
-- `tests/`: installer regression tests.
+- `tests/`: installer and routing-policy regression tests.
 
 ## Publishing
 

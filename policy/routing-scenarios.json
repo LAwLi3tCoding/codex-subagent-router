@@ -1,0 +1,404 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "direct-no-material-benefit",
+      "receipt": {
+        "remaining_work": "Make one local read with no independent value",
+        "delegation_benefit": false,
+        "phase": "analysis",
+        "work_mode": "read_only",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "low",
+        "complexity_signals": [],
+        "independent_workstreams": 0,
+        "same_tier_required": false,
+        "selected_role": "direct",
+        "selected_model": null,
+        "selected_effort": null,
+        "rejected_lower_tier": "Delegation overhead exceeds the work",
+        "rejected_higher_tier": "No added capability is needed",
+        "fallback": "direct"
+      }
+    },
+    {
+      "id": "default-affirmative-same-tier",
+      "receipt": {
+        "remaining_work": "Implement an isolated sibling slice requiring the parent capability",
+        "delegation_benefit": true,
+        "phase": "implementation",
+        "work_mode": "implementation",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "standard",
+        "complexity_signals": ["same_capability_contract"],
+        "independent_workstreams": 1,
+        "same_tier_required": true,
+        "selected_role": "default",
+        "selected_model": "inherited",
+        "selected_effort": "inherited",
+        "rejected_lower_tier": "The slice preserves the parent quality boundary",
+        "rejected_higher_tier": "The parent capability already covers the slice",
+        "fallback": "return_to_parent"
+      }
+    },
+    {
+      "id": "luna-low-literal-format",
+      "receipt": {
+        "remaining_work": "Format a short explicit list into a fixed schema",
+        "delegation_benefit": true,
+        "phase": "transformation",
+        "work_mode": "mechanical",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "low",
+        "complexity_signals": [],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "luna-low",
+        "selected_model": "gpt-5.6-luna",
+        "selected_effort": "low",
+        "rejected_lower_tier": "This is the lowest supported Luna effort",
+        "rejected_higher_tier": "The task is single-step with an exact oracle",
+        "fallback": "luna-medium"
+      }
+    },
+    {
+      "id": "luna-medium-batch",
+      "receipt": {
+        "remaining_work": "Classify a large batch with simple explicit rules",
+        "delegation_benefit": true,
+        "phase": "transformation",
+        "work_mode": "mechanical",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "low",
+        "complexity_signals": ["high_volume"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "luna-medium",
+        "selected_model": "gpt-5.6-luna",
+        "selected_effort": "medium",
+        "rejected_lower_tier": "Batch volume and several rules need routine depth",
+        "rejected_higher_tier": "Rules do not interact and outputs are exact",
+        "fallback": "luna-high"
+      }
+    },
+    {
+      "id": "luna-high-multi-rule",
+      "receipt": {
+        "remaining_work": "Transform records using several explicit edge-case rules",
+        "delegation_benefit": true,
+        "phase": "transformation",
+        "work_mode": "mechanical",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "standard",
+        "complexity_signals": ["multiple_rules", "explicit_edge_cases"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "luna-high",
+        "selected_model": "gpt-5.6-luna",
+        "selected_effort": "high",
+        "rejected_lower_tier": "Several rules interact at explicit boundaries",
+        "rejected_higher_tier": "Inputs and expected outputs remain complete",
+        "fallback": "luna-xhigh"
+      }
+    },
+    {
+      "id": "luna-xhigh-closed-reasoning",
+      "receipt": {
+        "remaining_work": "Resolve interacting explicit rules against a mechanical oracle",
+        "delegation_benefit": true,
+        "phase": "reasoning",
+        "work_mode": "bounded_reasoning",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "standard",
+        "complexity_signals": ["interacting_rules", "counterexamples"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "luna-xhigh",
+        "selected_model": "gpt-5.6-luna",
+        "selected_effort": "xhigh",
+        "rejected_lower_tier": "Interacting rules require deeper bounded reasoning",
+        "rejected_higher_tier": "The mechanical oracle keeps the task below max",
+        "fallback": "luna-max"
+      }
+    },
+    {
+      "id": "luna-max-hardest-closed-proof",
+      "receipt": {
+        "remaining_work": "Solve the hardest closed proof with complete fixtures",
+        "delegation_benefit": true,
+        "phase": "reasoning",
+        "work_mode": "bounded_reasoning",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "standard",
+        "complexity_signals": ["hardest_closed_case", "many_counterexamples"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "luna-max",
+        "selected_model": "gpt-5.6-luna",
+        "selected_effort": "max",
+        "rejected_lower_tier": "The bounded proof exhausts lower Luna efforts",
+        "rejected_higher_tier": "Luna has no ultra route and the oracle is complete",
+        "fallback": "sol-high"
+      }
+    },
+    {
+      "id": "terra-low-focused-lookup",
+      "receipt": {
+        "remaining_work": "Locate one symbol and return its exact source",
+        "delegation_benefit": true,
+        "phase": "exploration",
+        "work_mode": "read_only",
+        "scope_closed": true,
+        "design_closed": false,
+        "risk": "low",
+        "complexity_signals": [],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "terra-low",
+        "selected_model": "gpt-5.6-terra",
+        "selected_effort": "low",
+        "rejected_lower_tier": "This is the lowest supported Terra effort",
+        "rejected_higher_tier": "The lookup is narrow and explicit",
+        "fallback": "terra-medium"
+      }
+    },
+    {
+      "id": "terra-medium-code-map",
+      "receipt": {
+        "remaining_work": "Map entry points and call paths in one subsystem",
+        "delegation_benefit": true,
+        "phase": "exploration",
+        "work_mode": "read_only",
+        "scope_closed": false,
+        "design_closed": false,
+        "risk": "low",
+        "complexity_signals": ["multiple_files"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "terra-medium",
+        "selected_model": "gpt-5.6-terra",
+        "selected_effort": "medium",
+        "rejected_lower_tier": "The map spans several files and relationships",
+        "rejected_higher_tier": "No conflicting evidence is expected",
+        "fallback": "terra-high"
+      }
+    },
+    {
+      "id": "terra-high-multi-source",
+      "receipt": {
+        "remaining_work": "Reconcile several official sources and code references",
+        "delegation_benefit": true,
+        "phase": "research",
+        "work_mode": "research",
+        "scope_closed": false,
+        "design_closed": false,
+        "risk": "standard",
+        "complexity_signals": ["multiple_sources", "relationship_mapping"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "terra-high",
+        "selected_model": "gpt-5.6-terra",
+        "selected_effort": "high",
+        "rejected_lower_tier": "Several sources require reconciliation",
+        "rejected_higher_tier": "The evidence is broad but not materially conflicting",
+        "fallback": "terra-xhigh"
+      }
+    },
+    {
+      "id": "terra-xhigh-conflicting-evidence",
+      "receipt": {
+        "remaining_work": "Map several plausible causes across conflicting sources",
+        "delegation_benefit": true,
+        "phase": "exploration",
+        "work_mode": "read_only",
+        "scope_closed": false,
+        "design_closed": false,
+        "risk": "standard",
+        "complexity_signals": ["conflicting_evidence", "several_plausible_causes"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "terra-xhigh",
+        "selected_model": "gpt-5.6-terra",
+        "selected_effort": "xhigh",
+        "rejected_lower_tier": "Conflicting evidence and causes interact",
+        "rejected_higher_tier": "The evidence corpus remains bounded",
+        "fallback": "terra-max"
+      }
+    },
+    {
+      "id": "terra-max-large-corpus",
+      "receipt": {
+        "remaining_work": "Synthesize an exceptional bounded evidence corpus",
+        "delegation_benefit": true,
+        "phase": "research",
+        "work_mode": "research",
+        "scope_closed": true,
+        "design_closed": false,
+        "risk": "high",
+        "complexity_signals": ["large_corpus", "conflicting_evidence"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "terra-max",
+        "selected_model": "gpt-5.6-terra",
+        "selected_effort": "max",
+        "rejected_lower_tier": "The bounded corpus exhausts lower Terra efforts",
+        "rejected_higher_tier": "The work is one evidence stream, not orchestration",
+        "fallback": "sol-max"
+      }
+    },
+    {
+      "id": "terra-ultra-research-program",
+      "receipt": {
+        "remaining_work": "Coordinate independent read-only evidence workstreams",
+        "delegation_benefit": true,
+        "phase": "orchestration",
+        "work_mode": "research",
+        "scope_closed": true,
+        "design_closed": false,
+        "risk": "high",
+        "complexity_signals": ["exceptional", "independent_workstreams"],
+        "independent_workstreams": 2,
+        "same_tier_required": false,
+        "selected_role": "terra-ultra",
+        "selected_model": "gpt-5.6-terra",
+        "selected_effort": "ultra",
+        "rejected_lower_tier": "Multiple independent streams need automatic delegation",
+        "rejected_higher_tier": "Terra only gathers evidence and does not own the decision",
+        "fallback": "sol-ultra"
+      }
+    },
+    {
+      "id": "sol-low-straightforward-implementation",
+      "receipt": {
+        "remaining_work": "Implement one low-risk method from a complete design",
+        "delegation_benefit": true,
+        "phase": "implementation",
+        "work_mode": "implementation",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "low",
+        "complexity_signals": [],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "sol-low",
+        "selected_model": "gpt-5.6-sol",
+        "selected_effort": "low",
+        "rejected_lower_tier": "This is the lowest supported Sol effort",
+        "rejected_higher_tier": "The implementation is narrow with an exact test",
+        "fallback": "sol-medium"
+      }
+    },
+    {
+      "id": "sol-medium-routine-implementation",
+      "receipt": {
+        "remaining_work": "Implement a routine multi-step slice with established patterns",
+        "delegation_benefit": true,
+        "phase": "implementation",
+        "work_mode": "implementation",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "standard",
+        "complexity_signals": ["multiple_steps"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "sol-medium",
+        "selected_model": "gpt-5.6-sol",
+        "selected_effort": "medium",
+        "rejected_lower_tier": "The slice has several dependent steps",
+        "rejected_higher_tier": "Patterns and acceptance checks are established",
+        "fallback": "sol-high"
+      }
+    },
+    {
+      "id": "sol-high-demanding-bounded-implementation",
+      "receipt": {
+        "remaining_work": "Implement a demanding bounded slice with explicit edge cases",
+        "delegation_benefit": true,
+        "phase": "implementation",
+        "work_mode": "implementation",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "standard",
+        "complexity_signals": ["several_constraints", "explicit_edge_cases"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "sol-high",
+        "selected_model": "gpt-5.6-sol",
+        "selected_effort": "high",
+        "rejected_lower_tier": "Several constraints need deeper reasoning",
+        "rejected_higher_tier": "The constraints do not interact across modules",
+        "fallback": "sol-xhigh"
+      }
+    },
+    {
+      "id": "sol-xhigh-cross-module-debugging",
+      "receipt": {
+        "remaining_work": "Resolve interacting causes across several modules",
+        "delegation_benefit": true,
+        "phase": "debugging",
+        "work_mode": "judgment",
+        "scope_closed": false,
+        "design_closed": false,
+        "risk": "standard",
+        "complexity_signals": ["multiple_modules", "several_plausible_causes"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "sol-xhigh",
+        "selected_model": "gpt-5.6-sol",
+        "selected_effort": "xhigh",
+        "rejected_lower_tier": "Two complexity signals interact",
+        "rejected_higher_tier": "No architecture-level decision is yet required",
+        "fallback": "sol-max"
+      }
+    },
+    {
+      "id": "sol-max-high-risk-architecture",
+      "receipt": {
+        "remaining_work": "Own a high-risk cross-component architecture decision",
+        "delegation_benefit": true,
+        "phase": "design",
+        "work_mode": "judgment",
+        "scope_closed": false,
+        "design_closed": false,
+        "risk": "high",
+        "complexity_signals": ["cross_component", "high_risk_decision"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "sol-max",
+        "selected_model": "gpt-5.6-sol",
+        "selected_effort": "max",
+        "rejected_lower_tier": "High-risk architecture requires maximum single-task depth",
+        "rejected_higher_tier": "The work does not divide into independent streams",
+        "fallback": "return_to_parent"
+      }
+    },
+    {
+      "id": "sol-ultra-exceptional-orchestration",
+      "receipt": {
+        "remaining_work": "Lead exceptional architecture across independent workstreams",
+        "delegation_benefit": true,
+        "phase": "orchestration",
+        "work_mode": "orchestration",
+        "scope_closed": true,
+        "design_closed": false,
+        "risk": "high",
+        "complexity_signals": ["exceptional", "independent_workstreams"],
+        "independent_workstreams": 2,
+        "same_tier_required": false,
+        "selected_role": "sol-ultra",
+        "selected_model": "gpt-5.6-sol",
+        "selected_effort": "ultra",
+        "rejected_lower_tier": "Independent streams benefit from automatic delegation",
+        "rejected_higher_tier": "Ultra is the runtime orchestration mode",
+        "fallback": "sol-max"
+      }
+    }
+  ]
+}

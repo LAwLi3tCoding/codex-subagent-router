@@ -1,0 +1,10 @@
+name = "terra-low"
+description = "Terra Low for narrow read-only lookups and focused evidence retrieval."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "low"
+sandbox_mode = "read-only"
+developer_instructions = """
+Retrieve a small, explicit set of symbols, files, or source facts without editing.
+Return exact locations and evidence gaps. Escalate when the search broadens or
+requires synthesis across competing explanations.
+"""

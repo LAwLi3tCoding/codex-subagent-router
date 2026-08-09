@@ -8,6 +8,12 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+RETIRED_ROLES = (
+    "luna-batch",
+    "luna-reasoner",
+    "terra-explorer",
+    "terra-researcher",
+)
 
 
 def load_module(name: str, path: Path):
@@ -24,14 +30,15 @@ class InstallerContractTest(unittest.TestCase):
         policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
             encoding="utf-8"
         )
-        expected_model_tags = (
-            ("gpt-5.6-luna", "medium", "gpt56_luna_medium"),
-            ("gpt-5.6-luna", "max", "gpt56_luna_max"),
-            ("gpt-5.6-terra", "medium", "gpt56_terra_medium"),
-            ("gpt-5.6-terra", "high", "gpt56_terra_high"),
-            ("gpt-5.6-sol", "high", "gpt56_sol_high"),
-            ("gpt-5.6-sol", "xhigh", "gpt56_sol_xhigh"),
-            ("gpt-5.6-sol", "max", "gpt56_sol_max"),
+        family_efforts = {
+            "luna": ("low", "medium", "high", "xhigh", "max"),
+            "terra": ("low", "medium", "high", "xhigh", "max", "ultra"),
+            "sol": ("low", "medium", "high", "xhigh", "max", "ultra"),
+        }
+        expected_model_tags = tuple(
+            (f"gpt-5.6-{family}", effort, f"gpt56_{family}_{effort}")
+            for family, efforts in family_efforts.items()
+            for effort in efforts
         )
 
         self.assertIn("Every spawn must set `task_name`", policy)
@@ -53,17 +60,15 @@ class InstallerContractTest(unittest.TestCase):
             encoding="utf-8"
         )
         luna = tomllib.loads(
-            (REPO_ROOT / "agents" / "luna-reasoner.toml").read_text(
-                encoding="utf-8"
-            )
+            (REPO_ROOT / "agents" / "luna-max.toml").read_text(encoding="utf-8")
         )
         terra_explorer = tomllib.loads(
-            (REPO_ROOT / "agents" / "terra-explorer.toml").read_text(
+            (REPO_ROOT / "agents" / "terra-medium.toml").read_text(
                 encoding="utf-8"
             )
         )
         terra_researcher = tomllib.loads(
-            (REPO_ROOT / "agents" / "terra-researcher.toml").read_text(
+            (REPO_ROOT / "agents" / "terra-high.toml").read_text(
                 encoding="utf-8"
             )
         )
@@ -72,7 +77,7 @@ class InstallerContractTest(unittest.TestCase):
         )
 
         self.assertEqual(luna["model_reasoning_effort"], "max")
-        self.assertIn("strictly bounded", luna["developer_instructions"])
+        self.assertIn("strictly closed", luna["developer_instructions"])
         self.assertIn("independently and mechanically verified", policy)
         self.assertIn("Never route open-ended", policy)
 
@@ -83,9 +88,9 @@ class InstallerContractTest(unittest.TestCase):
         self.assertIn("high-risk", terra_researcher["developer_instructions"])
 
         self.assertEqual(ultra["model"], "gpt-5.6-sol")
-        self.assertEqual(ultra["model_reasoning_effort"], "max")
+        self.assertEqual(ultra["model_reasoning_effort"], "ultra")
         self.assertIn("orchestration role", ultra["description"])
-        self.assertIn("Ultra is an orchestration pattern", policy)
+        self.assertIn("automatic task delegation mode", policy)
 
     def test_routes_are_re_evaluated_for_remaining_work(self):
         policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
@@ -132,7 +137,10 @@ class InstallerContractTest(unittest.TestCase):
             self.assertIn("Router source and installed configuration verified.", result.stdout)
             guidance = (codex_home / "AGENTS.md").read_text(encoding="utf-8")
             self.assertIn("<!-- CODEX-SUBAGENT-ROUTER:START -->", guidance)
-            self.assertTrue((codex_home / "agents" / "luna-reasoner.toml").is_file())
+            for role in RETIRED_ROLES:
+                self.assertFalse((codex_home / "agents" / f"{role}.toml").exists())
+            self.assertTrue((codex_home / "agents" / "luna-low.toml").is_file())
+            self.assertTrue((codex_home / "agents" / "terra-ultra.toml").is_file())
             self.assertTrue((codex_home / "agents" / "sol-ultra.toml").is_file())
             self.assertTrue(
                 (codex_home / "hooks" / "codex_subagent_router_disclosure.py").is_file()
@@ -150,6 +158,12 @@ class InstallerContractTest(unittest.TestCase):
             global_agents = codex_home / "AGENTS.md"
             config = codex_home / "config.toml"
             hooks_path = codex_home / "hooks.json"
+            target_agents = codex_home / "agents"
+            target_agents.mkdir()
+            for role in RETIRED_ROLES:
+                (target_agents / f"{role}.toml").write_text(
+                    f'name = "{role}"\nmarker = "retired"\n', encoding="utf-8"
+                )
 
             global_agents.write_text(
                 "# Existing guidance\n\n"
@@ -217,23 +231,35 @@ class InstallerContractTest(unittest.TestCase):
             self.assertNotIn("default_subagent_model", parsed_config["agents"])
             self.assertNotIn("default_subagent_reasoning_effort", parsed_config["agents"])
 
-            expected_roles = {
-                "default": (None, None),
-                "luna-batch": ("gpt-5.6-luna", "medium"),
-                "luna-reasoner": ("gpt-5.6-luna", "max"),
-                "terra-explorer": ("gpt-5.6-terra", "medium"),
-                "terra-researcher": ("gpt-5.6-terra", "high"),
-                "sol-high": ("gpt-5.6-sol", "high"),
-                "sol-xhigh": ("gpt-5.6-sol", "xhigh"),
-                "sol-max": ("gpt-5.6-sol", "max"),
-                "sol-ultra": ("gpt-5.6-sol", "max"),
-            }
+            expected_roles = {"default": (None, None)}
+            for family, efforts in {
+                "luna": ("low", "medium", "high", "xhigh", "max"),
+                "terra": ("low", "medium", "high", "xhigh", "max", "ultra"),
+                "sol": ("low", "medium", "high", "xhigh", "max", "ultra"),
+            }.items():
+                expected_roles.update(
+                    {
+                        f"{family}-{effort}": (f"gpt-5.6-{family}", effort)
+                        for effort in efforts
+                    }
+                )
             for role, expected in expected_roles.items():
                 role_file = codex_home / "agents" / f"{role}.toml"
                 self.assertTrue(role_file.is_file(), role)
                 role_config = tomllib.loads(role_file.read_text(encoding="utf-8"))
                 self.assertEqual(role_config.get("model"), expected[0], role)
                 self.assertEqual(role_config.get("model_reasoning_effort"), expected[1], role)
+
+            for role in RETIRED_ROLES:
+                retired_path = target_agents / f"{role}.toml"
+                self.assertFalse(retired_path.exists(), role)
+                backups = list(
+                    (codex_home / "subagent-router-backups").glob(
+                        f"*/agents/{role}.toml"
+                    )
+                )
+                self.assertEqual(len(backups), 1, role)
+                self.assertIn('marker = "retired"', backups[0].read_text(encoding="utf-8"))
 
             installed_guidance = global_agents.read_text(encoding="utf-8")
             self.assertIn("Keep this line.", installed_guidance)
@@ -261,6 +287,13 @@ class InstallerContractTest(unittest.TestCase):
             self.assertEqual(
                 verifier.verify_install(codex_home, global_agents, policy_path), []
             )
+            stale_role = target_agents / f"{RETIRED_ROLES[0]}.toml"
+            stale_role.write_text('name = "retired"\n', encoding="utf-8")
+            self.assertIn(
+                f"agent:{RETIRED_ROLES[0]}:retired",
+                verifier.verify_install(codex_home, global_agents, policy_path),
+            )
+            stale_role.unlink()
             stale_guidance = installed_guidance.replace(
                 "The parent agent decides how many children to run",
                 "The parent agent runs no more than three children",
@@ -311,6 +344,10 @@ class InstallerContractTest(unittest.TestCase):
                 (
                     {"hook_event_name": "SubagentStart", "agent_type": "sol-xhigh", "model": "runtime-model"},
                     "Subagent started | role: sol-xhigh | model: runtime-model | reasoning: xhigh",
+                ),
+                (
+                    {"hook_event_name": "SubagentStart", "agent_type": "terra-ultra", "model": "runtime-model"},
+                    "Subagent started | role: terra-ultra | model: runtime-model | reasoning: ultra",
                 ),
                 (
                     {"hook_event_name": "SubagentStart", "agent_type": "default", "model": "parent-model"},

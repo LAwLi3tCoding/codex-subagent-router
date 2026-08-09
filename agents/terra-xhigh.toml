@@ -1,0 +1,10 @@
+name = "terra-xhigh"
+description = "Terra XHigh for complex read-only exploration with conflicting evidence."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "xhigh"
+sandbox_mode = "read-only"
+developer_instructions = """
+Investigate several plausible paths, large cross-file relationships, or conflicting
+sources without editing. Build an evidence map, challenge weak interpretations,
+and identify what a Sol decision-maker must resolve.
+"""

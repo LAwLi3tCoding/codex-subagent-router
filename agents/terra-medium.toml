@@ -1,0 +1,10 @@
+name = "terra-medium"
+description = "Terra Medium for routine read-heavy codebase and evidence mapping."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+sandbox_mode = "read-only"
+developer_instructions = """
+Map relevant code, symbols, call paths, state transitions, sources, and evidence
+gaps without editing. Distill the result for the parent and avoid unsupported
+solution claims or final high-risk decisions.
+"""

@@ -48,6 +48,33 @@ reasoning-effort field, `default` truthfully reports `inherited from parent`, an
 unknown roles report `runtime-selected (not exposed by SubagentStart)` instead of
 guessing.
 
+The router also prefixes every spawned task name so the same information is
+visible directly in the Codex App's **Subagents** list. For example:
+
+```text
+sol56_xhigh_review_installer
+```
+
+Current App versions render that task name as the row title, making `SOL56` and
+`XHIGH` visible without opening the child thread. These are text prefixes rather
+than native App badges. The complete prefix matrix is:
+
+| Role | Task-name prefix |
+| --- | --- |
+| `default` | `default_inherited` |
+| `luna-batch` | `luna56_medium` |
+| `luna-reasoner` | `luna56_max` |
+| `terra-explorer` | `terra56_medium` |
+| `terra-researcher` | `terra56_high` |
+| `sol-high` | `sol56_high` |
+| `sol-xhigh` | `sol56_xhigh` |
+| `sol-max` | `sol56_max` |
+| `sol-ultra` | `sol56_max_ultra` |
+| Unlisted role | `runtime_selected` |
+
+The title is an immediate routing label. The lifecycle message remains the
+runtime check for the model actually selected by Codex.
+
 ## Install
 
 Requires Python 3.11 or newer and a current Codex release.

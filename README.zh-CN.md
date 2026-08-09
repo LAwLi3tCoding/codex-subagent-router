@@ -43,6 +43,32 @@ Subagent started | role: sol-xhigh | model: gpt-5.6-sol | reasoning: xhigh
 配置强度的内置或未知角色会显示
 `runtime-selected (not exposed by SubagentStart)`，不会猜测具体值。
 
+路由器还会给每个子 Agent 的任务名增加前缀，让模型层级和推理强度直接显示
+在 Codex App 的 **Subagents** 列表中。例如：
+
+```text
+sol56_xhigh_review_installer
+```
+
+当前 App 会把这个任务名显示为列表行标题，因此无需进入子线程就能看到
+`SOL56` 和 `XHIGH`。这是文本前缀，并非 App 原生 badge。完整映射如下：
+
+| 角色 | 任务名前缀 |
+| --- | --- |
+| `default` | `default_inherited` |
+| `luna-batch` | `luna56_medium` |
+| `luna-reasoner` | `luna56_max` |
+| `terra-explorer` | `terra56_medium` |
+| `terra-researcher` | `terra56_high` |
+| `sol-high` | `sol56_high` |
+| `sol-xhigh` | `sol56_xhigh` |
+| `sol-max` | `sol56_max` |
+| `sol-ultra` | `sol56_max_ultra` |
+| 未列出的角色 | `runtime_selected` |
+
+标题前缀用于快速识别路由选择；生命周期消息仍负责校验 Codex 实际使用的
+运行时模型。
+
 ## 安装
 
 需要 Python 3.11 或更高版本，以及当前版本的 Codex。

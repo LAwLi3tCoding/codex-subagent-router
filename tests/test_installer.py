@@ -20,6 +20,29 @@ def load_module(name: str, path: Path):
 
 
 class InstallerContractTest(unittest.TestCase):
+    def test_task_names_carry_app_visible_route_prefixes(self):
+        policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
+            encoding="utf-8"
+        )
+        expected_prefixes = {
+            "default": "default_inherited",
+            "luna-batch": "luna56_medium",
+            "luna-reasoner": "luna56_max",
+            "terra-explorer": "terra56_medium",
+            "terra-researcher": "terra56_high",
+            "sol-high": "sol56_high",
+            "sol-xhigh": "sol56_xhigh",
+            "sol-max": "sol56_max",
+            "sol-ultra": "sol56_max_ultra",
+        }
+
+        self.assertIn("Every spawn must set `task_name`", policy)
+        self.assertIn("`<route_tag>_<short_purpose>`", policy)
+        self.assertIn("must be the first component", policy)
+        for role, prefix in expected_prefixes.items():
+            self.assertIn(f"`{role}` -> `{prefix}`", policy)
+        self.assertIn("unlisted role -> `runtime_selected`", policy)
+
     def test_model_roles_enforce_capability_boundaries(self):
         policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
             encoding="utf-8"

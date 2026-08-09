@@ -15,6 +15,30 @@ would not materially improve speed, quality, isolation, or independent review.
 - Reinstalling or updating the hook requires the user to review and trust its
   current definition once through Codex's hook trust flow.
 
+### App-visible task-name labels
+
+Every spawn must set `task_name` to `<route_tag>_<short_purpose>`. The route tag
+must be the first component so the Codex App's Subagents list exposes the selected
+model tier and reasoning effort directly in each task title. Keep the purpose
+short and use only lowercase letters, digits, and underscores.
+
+- `default` -> `default_inherited`
+- `luna-batch` -> `luna56_medium`
+- `luna-reasoner` -> `luna56_max`
+- `terra-explorer` -> `terra56_medium`
+- `terra-researcher` -> `terra56_high`
+- `sol-high` -> `sol56_high`
+- `sol-xhigh` -> `sol56_xhigh`
+- `sol-max` -> `sol56_max`
+- `sol-ultra` -> `sol56_max_ultra`
+- unlisted role -> `runtime_selected`
+
+For example, an XHigh review uses `sol56_xhigh_review_installer`. Apply the
+prefix to every child, including parallel children, retries, and escalations.
+The title prefix communicates the router's selected configuration; the
+`SubagentStart` hook remains the source for the runtime model actually used.
+Never replace `default_inherited` with a guessed model or reasoning value.
+
 ### Default inheritance
 
 - `default` is the ordinary delegation role.

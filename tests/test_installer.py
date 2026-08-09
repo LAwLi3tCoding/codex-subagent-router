@@ -25,13 +25,13 @@ class InstallerContractTest(unittest.TestCase):
             encoding="utf-8"
         )
         expected_model_tags = (
-            ("gpt-5.6-luna", "medium", "5_6_luna_medium"),
-            ("gpt-5.6-luna", "max", "5_6_luna_max"),
-            ("gpt-5.6-terra", "medium", "5_6_terra_medium"),
-            ("gpt-5.6-terra", "high", "5_6_terra_high"),
-            ("gpt-5.6-sol", "high", "5_6_sol_high"),
-            ("gpt-5.6-sol", "xhigh", "5_6_sol_xhigh"),
-            ("gpt-5.6-sol", "max", "5_6_sol_max"),
+            ("gpt-5.6-luna", "medium", "gpt56_luna_medium"),
+            ("gpt-5.6-luna", "max", "gpt56_luna_max"),
+            ("gpt-5.6-terra", "medium", "gpt56_terra_medium"),
+            ("gpt-5.6-terra", "high", "gpt56_terra_high"),
+            ("gpt-5.6-sol", "high", "gpt56_sol_high"),
+            ("gpt-5.6-sol", "xhigh", "gpt56_sol_xhigh"),
+            ("gpt-5.6-sol", "max", "gpt56_sol_max"),
         )
 
         self.assertIn("Every spawn must set `task_name`", policy)
@@ -44,7 +44,8 @@ class InstallerContractTest(unittest.TestCase):
         label_section = policy.split("### App-visible task-name labels", 1)[1].split(
             "### Default inheritance", 1
         )[0]
-        self.assertNotIn("5_6_sol_max_ultra", label_section)
+        self.assertNotIn("5_6_", label_section)
+        self.assertIn("`gpt56_luna_max`", label_section)
         self.assertIn("not available before spawn -> `runtime_selected`", policy)
 
     def test_model_roles_enforce_capability_boundaries(self):

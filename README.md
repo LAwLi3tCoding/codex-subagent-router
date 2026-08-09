@@ -52,28 +52,28 @@ The router also prefixes every spawned task name so the same information is
 visible directly in the Codex App's **Subagents** list. For example:
 
 ```text
-5_6_luna_max_analyze_rules
+gpt56_luna_max_analyze_rules
 ```
 
 Current App versions render that identifier as the row title. Its leading fields
-encode the human-readable label `5.6 · luna · max`; underscores are required
+encode the human-readable label `GPT56 · luna · max`; underscores are required
 because Codex task names accept only lowercase letters, digits, and underscores.
 These are text prefixes rather than native App badges. Tags are derived from the
 child's effective model and effort, not its role name. The complete matrix is:
 
 | Effective child model | Effort | Task-name prefix |
 | --- | --- | --- |
-| `gpt-5.6-luna` | `medium` | `5_6_luna_medium` |
-| `gpt-5.6-luna` | `max` | `5_6_luna_max` |
-| `gpt-5.6-terra` | `medium` | `5_6_terra_medium` |
-| `gpt-5.6-terra` | `high` | `5_6_terra_high` |
-| `gpt-5.6-sol` | `high` | `5_6_sol_high` |
-| `gpt-5.6-sol` | `xhigh` | `5_6_sol_xhigh` |
-| `gpt-5.6-sol` | `max` | `5_6_sol_max` |
+| `gpt-5.6-luna` | `medium` | `gpt56_luna_medium` |
+| `gpt-5.6-luna` | `max` | `gpt56_luna_max` |
+| `gpt-5.6-terra` | `medium` | `gpt56_terra_medium` |
+| `gpt-5.6-terra` | `high` | `gpt56_terra_high` |
+| `gpt-5.6-sol` | `high` | `gpt56_sol_high` |
+| `gpt-5.6-sol` | `xhigh` | `gpt56_sol_xhigh` |
+| `gpt-5.6-sol` | `max` | `gpt56_sol_max` |
 | Model or effort unavailable before spawn | — | `runtime_selected` |
 
 For example, `sol-max` and `sol-ultra` both currently resolve to Sol Max and
-therefore share `5_6_sol_max`; the orchestration role isn't added to the model
+therefore share `gpt56_sol_max`; the orchestration role isn't added to the model
 label. For `default`, the router uses the parent's effective values only when both
 are available before spawn, otherwise it falls back to `runtime_selected`. The
 lifecycle message remains the runtime check for the model actually selected by

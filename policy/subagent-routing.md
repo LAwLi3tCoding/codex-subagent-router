@@ -27,21 +27,21 @@ normal Codex configuration precedence is resolved. Never derive the tag from the
 A role may help select a configuration, but two roles that resolve to the same
 model and effort must receive the same tag.
 
-- `gpt-5.6-luna` + `medium` -> `5_6_luna_medium`
-- `gpt-5.6-luna` + `max` -> `5_6_luna_max`
-- `gpt-5.6-terra` + `medium` -> `5_6_terra_medium`
-- `gpt-5.6-terra` + `high` -> `5_6_terra_high`
-- `gpt-5.6-sol` + `high` -> `5_6_sol_high`
-- `gpt-5.6-sol` + `xhigh` -> `5_6_sol_xhigh`
-- `gpt-5.6-sol` + `max` -> `5_6_sol_max`
+- `gpt-5.6-luna` + `medium` -> `gpt56_luna_medium`
+- `gpt-5.6-luna` + `max` -> `gpt56_luna_max`
+- `gpt-5.6-terra` + `medium` -> `gpt56_terra_medium`
+- `gpt-5.6-terra` + `high` -> `gpt56_terra_high`
+- `gpt-5.6-sol` + `high` -> `gpt56_sol_high`
+- `gpt-5.6-sol` + `xhigh` -> `gpt56_sol_xhigh`
+- `gpt-5.6-sol` + `max` -> `gpt56_sol_max`
 - effective model or effort not available before spawn -> `runtime_selected`
 
-For example, a Luna Max task uses `5_6_luna_max_analyze_rules`, encoding the
-human-readable label `5.6 · luna · max` within the identifier-safe task name.
-An XHigh review uses `5_6_sol_xhigh_review_installer`. Apply the prefix to every
+For example, a Luna Max task uses `gpt56_luna_max_analyze_rules`, encoding the
+human-readable label `GPT56 · luna · max` within the identifier-safe task name.
+An XHigh review uses `gpt56_sol_xhigh_review_installer`. Apply the prefix to every
 child, including parallel children, retries, and escalations.
 Both `sol-max` and `sol-ultra` currently resolve to `gpt-5.6-sol` with `max`
-reasoning, so both use `5_6_sol_max`; `ultra` is not part of the model label.
+reasoning, so both use `gpt56_sol_max`; `ultra` is not part of the model label.
 For `default`, use the current parent model and effort only when both effective
 values are explicitly available before spawn. Otherwise use `runtime_selected`
 instead of guessing inherited values. The title prefix communicates the resolved

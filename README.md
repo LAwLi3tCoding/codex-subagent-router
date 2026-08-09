@@ -12,10 +12,11 @@ benefits from a deliberate override.
 Routing uses two axes. The model family follows the work mode and authority
 boundary; effort follows the remaining complexity.
 
-- Luna handles closed, cost-sensitive work with a mechanical oracle.
+- Luna handles closed, cost-sensitive work with a mechanical oracle, including
+  implementation from a complete executable design.
 - Terra handles read-only exploration, research, and evidence synthesis.
-- Sol handles implementation, judgment, verification, architecture, and final
-  high-risk synthesis.
+- Sol handles implementation that still requires local judgment, plus review,
+  verification, architecture, and final high-risk synthesis.
 - `default` still inherits the current session model and effort, but only when the
   routing receipt proves an affirmative same-tier match.
 
@@ -65,11 +66,13 @@ original task's most difficult phase. The parent re-evaluates the route at
 `exploration -> decision`, and every task split or handoff.
 
 A completed design is not an automatic reason to lower the tier. The design must
-actually resolve the decisions, interfaces, boundaries, acceptance evidence, and
-prohibited choices the implementer needs. Once it does, a bounded but demanding
-implementation may use `sol-low`, `sol-medium`, or `sol-high` even when its parent
-used XHigh or Max; mechanical edits may use the matching Luna effort, while
-unresolved cross-module or architectural work remains on XHigh or Max.
+actually resolve the decisions, interfaces, file boundaries, acceptance evidence,
+prohibited choices, and an independent mechanical oracle. When all of those stay
+closed, Luna Max is the primary route for logic-heavy implementation with many
+explicit or interacting rules; literal mechanical edits may use a lower Luna
+effort. Implementation that still needs local judgment uses `sol-low`,
+`sol-medium`, or `sol-high`, while reopened design or unresolved cross-module work
+uses Sol XHigh or Max.
 
 A new, narrower assignment may use a lower tier. Retrying the same unresolved work
 still follows one-way escalation. If the child's scope expands or design gaps

@@ -149,6 +149,27 @@
       }
     },
     {
+      "id": "luna-max-closed-logic-heavy-implementation",
+      "receipt": {
+        "remaining_work": "Implement many interacting rules from a complete executable design",
+        "delegation_benefit": true,
+        "phase": "implementation",
+        "work_mode": "implementation",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "standard",
+        "complexity_signals": ["logic_heavy", "interacting_explicit_rules", "exact_mechanical_oracle"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "luna-max",
+        "selected_model": "gpt-5.6-luna",
+        "selected_effort": "max",
+        "rejected_lower_tier": "The implementation has many interacting explicit rules",
+        "rejected_higher_tier": "The executable design and exact oracle leave no local design judgment",
+        "fallback": "sol-xhigh"
+      }
+    },
+    {
       "id": "terra-low-focused-lookup",
       "receipt": {
         "remaining_work": "Locate one symbol and return its exact source",
@@ -355,6 +376,27 @@
         "selected_effort": "xhigh",
         "rejected_lower_tier": "Two complexity signals interact",
         "rejected_higher_tier": "No architecture-level decision is yet required",
+        "fallback": "sol-max"
+      }
+    },
+    {
+      "id": "sol-xhigh-reopened-implementation-design",
+      "receipt": {
+        "remaining_work": "Implement a cross-file change after discovering missing design decisions",
+        "delegation_benefit": true,
+        "phase": "implementation",
+        "work_mode": "judgment",
+        "scope_closed": true,
+        "design_closed": false,
+        "risk": "standard",
+        "complexity_signals": ["multiple_modules", "unresolved_design"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "sol-xhigh",
+        "selected_model": "gpt-5.6-sol",
+        "selected_effort": "xhigh",
+        "rejected_lower_tier": "Missing decisions and multiple modules require implementation judgment",
+        "rejected_higher_tier": "No high-risk architecture decision is yet required",
         "fallback": "sol-max"
       }
     },

@@ -156,6 +156,41 @@ class RoutingPolicyContractTest(unittest.TestCase):
                     self.assertGreaterEqual(receipt["independent_workstreams"], 2)
                     self.assertIn("exceptional", receipt["complexity_signals"])
 
+    def test_luna_max_owns_closed_logic_heavy_implementation(self):
+        policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
+            encoding="utf-8"
+        )
+        luna = read_role("luna-max")
+        payload = json.loads(
+            (REPO_ROOT / "policy" / "routing-scenarios.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        receipts = {case["id"]: case["receipt"] for case in payload["cases"]}
+
+        closed = receipts["luna-max-closed-logic-heavy-implementation"]
+        self.assertEqual(closed["phase"], "implementation")
+        self.assertEqual(closed["work_mode"], "implementation")
+        self.assertTrue(closed["scope_closed"])
+        self.assertTrue(closed["design_closed"])
+        self.assertNotEqual(closed["risk"], "high")
+        self.assertEqual(closed["selected_role"], "luna-max")
+        self.assertEqual(closed["selected_model"], "gpt-5.6-luna")
+        self.assertEqual(closed["selected_effort"], "max")
+        self.assertIn("logic_heavy", closed["complexity_signals"])
+        self.assertIn("interacting_explicit_rules", closed["complexity_signals"])
+        self.assertIn("exact_mechanical_oracle", closed["complexity_signals"])
+
+        reopened = receipts["sol-xhigh-reopened-implementation-design"]
+        self.assertEqual(reopened["phase"], "implementation")
+        self.assertFalse(reopened["design_closed"])
+        self.assertEqual(reopened["selected_role"], "sol-xhigh")
+
+        self.assertIn("primary route for logic-heavy implementation", policy)
+        self.assertIn("non-mechanical writes", policy)
+        self.assertIn("logic-heavy implementation", luna["description"])
+        self.assertIn("Implement the authorized code changes", luna["developer_instructions"])
+
     def test_runtime_model_cache_reports_missing_or_corrupt_efforts(self):
         verifier = load_verifier()
         models = [

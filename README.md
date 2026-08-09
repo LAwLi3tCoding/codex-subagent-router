@@ -12,10 +12,11 @@ benefits from a deliberate override.
 Routing uses two axes. The model family follows the work mode and authority
 boundary; effort follows the remaining complexity.
 
-- Luna handles closed, cost-sensitive work with a mechanical oracle.
+- Luna handles closed, cost-sensitive work with a mechanical oracle, including
+  implementation from a complete executable design.
 - Terra handles read-only exploration, research, and evidence synthesis.
-- Sol handles implementation, judgment, verification, architecture, and final
-  high-risk synthesis.
+- Sol handles implementation that still requires local judgment, plus review,
+  verification, architecture, and final high-risk synthesis.
 - `default` still inherits the current session model and effort, but only when the
   routing receipt proves an affirmative same-tier match.
 
@@ -23,13 +24,15 @@ Canonical roles use `{family}-{effort}` names. This release supports:
 
 | Family | Canonical efforts |
 | --- | --- |
-| Luna | `low`, `medium`, `high`, `xhigh`, `max` |
+| Luna | `medium`, `high`, `xhigh`, `max` |
 | Terra | `low`, `medium`, `high`, `xhigh`, `max`, `ultra` |
 | Sol | `low`, `medium`, `high`, `xhigh`, `max`, `ultra` |
 
 Current Codex runtime metadata describes `ultra` as automatic task delegation. It
 is an orchestration mode for exceptional independently decomposable Sol or Terra
 work, not reasoning depth above `max`, and Luna has no Ultra route.
+Luna Medium is the lowest named Luna route; the runtime low tag remains only to
+describe an explicitly inherited parent-session choice.
 
 Luna and Terra may collect, transform, or organize evidence, but they never own
 the final architecture, security, release, migration, or other high-risk decision.
@@ -65,11 +68,14 @@ original task's most difficult phase. The parent re-evaluates the route at
 `exploration -> decision`, and every task split or handoff.
 
 A completed design is not an automatic reason to lower the tier. The design must
-actually resolve the decisions, interfaces, boundaries, acceptance evidence, and
-prohibited choices the implementer needs. Once it does, a bounded but demanding
-implementation may use `sol-low`, `sol-medium`, or `sol-high` even when its parent
-used XHigh or Max; mechanical edits may use the matching Luna effort, while
-unresolved cross-module or architectural work remains on XHigh or Max.
+actually resolve the decisions, interfaces, file boundaries, acceptance evidence,
+prohibited choices, and an independent mechanical oracle. When all of those stay
+closed, route literal or repetitive implementation to Luna Medium, explicit
+multi-rule implementation to Luna High, interacting multi-file implementation to
+Luna XHigh, and the hardest closed logic-heavy implementation to Luna Max.
+Implementation that still needs local judgment uses `sol-low`, `sol-medium`, or
+`sol-high`, while reopened design or unresolved cross-module work uses Sol XHigh
+or Max.
 
 A new, narrower assignment may use a lower tier. Retrying the same unresolved work
 still follows one-way escalation. If the child's scope expands or design gaps
@@ -122,7 +128,7 @@ child's effective model and effort, not its role name. The complete matrix is:
 
 | Effective child family | Efforts | Task-name prefix pattern |
 | --- | --- | --- |
-| `gpt-5.6-luna` | `low` through `max` | `gpt56_luna_<effort>` |
+| `gpt-5.6-luna` | named roles use `medium` through `max`; `low` is inherited observation only | `gpt56_luna_<effort>` |
 | `gpt-5.6-terra` | `low` through `max`, `ultra` | `gpt56_terra_<effort>` |
 | `gpt-5.6-sol` | `low` through `max`, `ultra` | `gpt56_sol_<effort>` |
 | Model or effort unavailable before spawn | — | `runtime_selected` |

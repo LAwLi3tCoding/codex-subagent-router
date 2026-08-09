@@ -22,6 +22,7 @@ BLOCK_END = "<!-- CODEX-SUBAGENT-ROUTER:END -->"
 HOOK_FILENAME = "codex_subagent_router_disclosure.py"
 HOOK_STATUS = "Showing subagent model and reasoning"
 RETIRED_AGENT_ROLES = (
+    "luna-low",
     "luna-batch",
     "luna-reasoner",
     "terra-explorer",

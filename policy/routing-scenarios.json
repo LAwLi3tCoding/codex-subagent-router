@@ -44,86 +44,65 @@
       }
     },
     {
-      "id": "luna-low-literal-format",
+      "id": "luna-medium-mechanical-implementation",
       "receipt": {
-        "remaining_work": "Format a short explicit list into a fixed schema",
+        "remaining_work": "Apply one literal code change from a complete executable design",
         "delegation_benefit": true,
-        "phase": "transformation",
-        "work_mode": "mechanical",
+        "phase": "implementation",
+        "work_mode": "implementation",
         "scope_closed": true,
         "design_closed": true,
         "risk": "low",
-        "complexity_signals": [],
-        "independent_workstreams": 1,
-        "same_tier_required": false,
-        "selected_role": "luna-low",
-        "selected_model": "gpt-5.6-luna",
-        "selected_effort": "low",
-        "rejected_lower_tier": "This is the lowest supported Luna effort",
-        "rejected_higher_tier": "The task is single-step with an exact oracle",
-        "fallback": "luna-medium"
-      }
-    },
-    {
-      "id": "luna-medium-batch",
-      "receipt": {
-        "remaining_work": "Classify a large batch with simple explicit rules",
-        "delegation_benefit": true,
-        "phase": "transformation",
-        "work_mode": "mechanical",
-        "scope_closed": true,
-        "design_closed": true,
-        "risk": "low",
-        "complexity_signals": ["high_volume"],
+        "complexity_signals": ["literal_mechanical_change", "exact_mechanical_oracle"],
         "independent_workstreams": 1,
         "same_tier_required": false,
         "selected_role": "luna-medium",
         "selected_model": "gpt-5.6-luna",
         "selected_effort": "medium",
-        "rejected_lower_tier": "Batch volume and several rules need routine depth",
-        "rejected_higher_tier": "Rules do not interact and outputs are exact",
+        "rejected_lower_tier": "Luna Medium is the lowest named Luna route",
+        "rejected_higher_tier": "The change has no materially interacting rules",
         "fallback": "luna-high"
       }
     },
     {
-      "id": "luna-high-multi-rule",
+      "id": "luna-high-explicit-rule-implementation",
       "receipt": {
-        "remaining_work": "Transform records using several explicit edge-case rules",
+        "remaining_work": "Implement several explicit rules and edge cases in one subsystem",
         "delegation_benefit": true,
-        "phase": "transformation",
-        "work_mode": "mechanical",
+        "phase": "implementation",
+        "work_mode": "implementation",
         "scope_closed": true,
         "design_closed": true,
         "risk": "standard",
-        "complexity_signals": ["multiple_rules", "explicit_edge_cases"],
+        "complexity_signals": ["multiple_explicit_rules", "explicit_edge_cases", "exact_mechanical_oracle"],
         "independent_workstreams": 1,
         "same_tier_required": false,
         "selected_role": "luna-high",
         "selected_model": "gpt-5.6-luna",
         "selected_effort": "high",
-        "rejected_lower_tier": "Several rules interact at explicit boundaries",
-        "rejected_higher_tier": "Inputs and expected outputs remain complete",
+        "rejected_lower_tier": "Several explicit rules and edge cases exceed routine mechanical work",
+        "rejected_higher_tier": "The rules stay within one subsystem and do not interact materially",
         "fallback": "luna-xhigh"
       }
     },
     {
-      "id": "luna-xhigh-closed-reasoning",
+      "id": "luna-xhigh-interacting-implementation",
       "receipt": {
-        "remaining_work": "Resolve interacting explicit rules against a mechanical oracle",
+        "remaining_work": "Implement interacting explicit rules across several specified files",
         "delegation_benefit": true,
-        "phase": "reasoning",
-        "work_mode": "bounded_reasoning",
+        "phase": "implementation",
+        "work_mode": "implementation",
         "scope_closed": true,
         "design_closed": true,
         "risk": "standard",
-        "complexity_signals": ["interacting_rules", "counterexamples"],
+        "complexity_signals": ["multiple_files", "interacting_explicit_rules", "exact_mechanical_oracle"],
         "independent_workstreams": 1,
         "same_tier_required": false,
         "selected_role": "luna-xhigh",
         "selected_model": "gpt-5.6-luna",
         "selected_effort": "xhigh",
-        "rejected_lower_tier": "Interacting rules require deeper bounded reasoning",
-        "rejected_higher_tier": "The mechanical oracle keeps the task below max",
+        "rejected_lower_tier": "Multiple files and interacting rules require XHigh depth",
+        "rejected_higher_tier": "The bounded change does not contain heavy state or branch complexity",
         "fallback": "luna-max"
       }
     },
@@ -146,6 +125,27 @@
         "rejected_lower_tier": "The bounded proof exhausts lower Luna efforts",
         "rejected_higher_tier": "Luna has no ultra route and the oracle is complete",
         "fallback": "sol-high"
+      }
+    },
+    {
+      "id": "luna-max-closed-logic-heavy-implementation",
+      "receipt": {
+        "remaining_work": "Implement many interacting rules from a complete executable design",
+        "delegation_benefit": true,
+        "phase": "implementation",
+        "work_mode": "implementation",
+        "scope_closed": true,
+        "design_closed": true,
+        "risk": "standard",
+        "complexity_signals": ["logic_heavy", "interacting_explicit_rules", "exact_mechanical_oracle"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "luna-max",
+        "selected_model": "gpt-5.6-luna",
+        "selected_effort": "max",
+        "rejected_lower_tier": "The implementation has many interacting explicit rules",
+        "rejected_higher_tier": "The executable design and exact oracle leave no local design judgment",
+        "fallback": "sol-xhigh"
       }
     },
     {
@@ -355,6 +355,27 @@
         "selected_effort": "xhigh",
         "rejected_lower_tier": "Two complexity signals interact",
         "rejected_higher_tier": "No architecture-level decision is yet required",
+        "fallback": "sol-max"
+      }
+    },
+    {
+      "id": "sol-xhigh-reopened-implementation-design",
+      "receipt": {
+        "remaining_work": "Implement a cross-file change after discovering missing design decisions",
+        "delegation_benefit": true,
+        "phase": "implementation",
+        "work_mode": "judgment",
+        "scope_closed": true,
+        "design_closed": false,
+        "risk": "standard",
+        "complexity_signals": ["multiple_modules", "unresolved_design"],
+        "independent_workstreams": 1,
+        "same_tier_required": false,
+        "selected_role": "sol-xhigh",
+        "selected_model": "gpt-5.6-sol",
+        "selected_effort": "xhigh",
+        "rejected_lower_tier": "Missing decisions and multiple modules require implementation judgment",
+        "rejected_higher_tier": "No high-risk architecture decision is yet required",
         "fallback": "sol-max"
       }
     },

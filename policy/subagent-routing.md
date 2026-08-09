@@ -53,6 +53,8 @@ child, including parallel children, retries, and escalations. Current Codex runt
 metadata exposes `low`, `medium`, `high`, `xhigh`, and `max` for all three families,
 plus `ultra` for Sol and Terra. `ultra` is an automatic task delegation mode, not
 reasoning depth above `max`; Luna has no `ultra` route.
+The Luna low tag remains for truthful observation when `default` inherits a
+manually selected low-effort Luna session; no named low-effort Luna role is exposed.
 For `default`, use the current parent model and effort only when both effective
 values are explicitly available before spawn. Otherwise use `runtime_selected`
 instead of guessing inherited values. The title prefix communicates the resolved
@@ -96,7 +98,7 @@ effort from the remaining complexity. New routes use `{family}-{effort}` names.
 Use effort consistently within the selected family:
 
 - `low`: a narrow single-step task with complete inputs, low risk, and an exact
-  acceptance check.
+  acceptance check. Luna does not expose a named role at this effort.
 - `medium`: routine bounded multi-step work with established patterns.
 - `high`: several explicit constraints or edge cases requiring deeper reasoning.
 - `xhigh`: at least two interacting complexity signals, such as multiple modules,
@@ -109,6 +111,16 @@ Use effort consistently within the selected family:
   genuinely independent workstreams. It enables automatic delegation and is not a
   generic retry tier or a quality rank above `max`.
 
+Luna Medium is the lowest named route. Its closed implementation tiers are:
+
+- Luna Medium: literal, repetitive, or simple mechanical implementation with no
+  materially interacting rules.
+- Luna High: several explicit rules and edge cases within one bounded subsystem.
+- Luna XHigh: interacting explicit rules across several specified files while all
+  decisions and expected results remain closed.
+- Luna Max: the hardest closed, logic-heavy implementation with many interacting
+  branches, states, or rules. It is the primary route for logic-heavy implementation.
+
 ### Selection rules
 
 1. Work directly when delegation has no material benefit.
@@ -117,13 +129,12 @@ Use effort consistently within the selected family:
    their boundaries or best families differ.
 3. Use Luna only when scope, design inputs, decisions, interfaces, file boundaries,
    acceptance criteria, prohibited choices, and the mechanical oracle are complete.
-   Use Luna Max as the primary route for logic-heavy implementation when those
-   conditions remain closed and risk is not high. Missing or uncertain closure
-   blocks a Luna route.
+   Select Luna Medium, High, XHigh, or Max from the closed implementation tiers
+   above. Missing or uncertain closure blocks every Luna route.
 4. Use Terra for broad read-only evidence work. Route the downstream write or
    high-risk conclusion separately to Sol.
 5. Use Sol for non-mechanical writes, any implementation that does not satisfy the
-   Luna Max closed-implementation contract, judgment-heavy synthesis, and final
+   Luna closed-implementation contract, judgment-heavy synthesis, and final
    high-risk conclusions. Choose the lowest effort whose explicit conditions are
    all satisfied.
 6. Use `default` only for an affirmative same-tier match, never merely because no
@@ -200,12 +211,13 @@ Apply these rules in order when signals overlap:
 - A completed design does not by itself justify a cheaper route. Lower the tier
   only when the decisions, interfaces, file boundaries, acceptance evidence,
   prohibited choices, and independent mechanical oracle needed by the child are
-  actually complete. Once they are, use Luna Max as the primary route for
-  logic-heavy implementation with many explicit or interacting rules; literal
-  mechanical edits may use a lower matching Luna effort. Bounded implementation
-  that still requires local judgment may use `sol-low`, `sol-medium`, or
-  `sol-high`, while reopened design, interacting unresolved causes, or unstable
-  cross-component decisions justify Sol XHigh or Max.
+  actually complete. Once they are, route literal or repetitive implementation to
+  Luna Medium, explicit multi-rule implementation to Luna High, interacting
+  multi-file implementation to Luna XHigh, and the hardest closed logic-heavy
+  implementation to Luna Max. Bounded implementation that still requires local
+  judgment may use `sol-low`, `sol-medium`, or `sol-high`, while reopened design,
+  interacting unresolved causes, or unstable cross-component decisions justify
+  Sol XHigh or Max.
 - A genuinely new and narrower bounded assignment may select a lower tier than an
   earlier phase. A retry of the same unresolved assignment follows one-way
   escalation and must not be relabeled as a new phase merely to reset the tier.
@@ -219,7 +231,8 @@ Apply these rules in order when signals overlap:
 
 ### Escalation and orchestration
 
-- Within a family, escalate one direction for the same unresolved assignment:
+- Within Luna, escalate one direction for the same unresolved assignment:
+  `medium -> high -> xhigh -> max`. Within Terra or Sol, use
   `low -> medium -> high -> xhigh -> max`.
 - Move Luna work to Sol when its executable design or exact oracle stops being
   complete, local judgment reopens, risk becomes high, or final ownership crosses

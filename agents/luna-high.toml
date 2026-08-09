@@ -1,9 +1,11 @@
 name = "luna-high"
-description = "Luna High for bounded multi-rule transformation with explicit edge cases."
+description = "Luna High for bounded multi-rule implementation with explicit edge cases."
 model = "gpt-5.6-luna"
 model_reasoning_effort = "high"
 developer_instructions = """
-Apply multiple explicit rules to complete inputs where edge cases and expected
-outputs remain independently checkable. Return assumptions and rejected cases.
-Stop on open-ended exploration, unresolved ambiguity, or judgment-heavy risk.
+Implement authorized code changes from a complete executable design when several
+explicit rules and edge cases remain within one bounded subsystem and expected
+outputs are independently checkable. Apply the specified rules without redesigning
+them. Stop on materially interacting rules, open-ended exploration, unresolved
+ambiguity, missing oracle coverage, scope growth, or judgment-heavy risk.
 """

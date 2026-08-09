@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CANONICAL_ROLE_MATRIX = {
     **{
         f"luna-{effort}": ("gpt-5.6-luna", effort)
-        for effort in ("low", "medium", "high", "xhigh", "max")
+        for effort in ("medium", "high", "xhigh", "max")
     },
     **{
         f"terra-{effort}": ("gpt-5.6-terra", effort)
@@ -24,6 +24,7 @@ CANONICAL_ROLE_MATRIX = {
     },
 }
 RETIRED_ROLES = (
+    "luna-low",
     "luna-batch",
     "luna-reasoner",
     "terra-explorer",
@@ -74,6 +75,7 @@ class RoutingPolicyContractTest(unittest.TestCase):
                 self.assertEqual(config.get("model"), expected[0])
                 self.assertEqual(config.get("model_reasoning_effort"), expected[1])
         self.assertFalse((REPO_ROOT / "agents" / "luna-ultra.toml").exists())
+        self.assertFalse((REPO_ROOT / "agents" / "luna-low.toml").exists())
 
     def test_retired_aliases_are_not_exposed(self):
         verifier = load_verifier()
@@ -156,11 +158,10 @@ class RoutingPolicyContractTest(unittest.TestCase):
                     self.assertGreaterEqual(receipt["independent_workstreams"], 2)
                     self.assertIn("exceptional", receipt["complexity_signals"])
 
-    def test_luna_max_owns_closed_logic_heavy_implementation(self):
+    def test_luna_efforts_own_distinct_closed_implementation_tiers(self):
         policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
             encoding="utf-8"
         )
-        luna = read_role("luna-max")
         payload = json.loads(
             (REPO_ROOT / "policy" / "routing-scenarios.json").read_text(
                 encoding="utf-8"
@@ -168,28 +169,53 @@ class RoutingPolicyContractTest(unittest.TestCase):
         )
         receipts = {case["id"]: case["receipt"] for case in payload["cases"]}
 
-        closed = receipts["luna-max-closed-logic-heavy-implementation"]
-        self.assertEqual(closed["phase"], "implementation")
-        self.assertEqual(closed["work_mode"], "implementation")
-        self.assertTrue(closed["scope_closed"])
-        self.assertTrue(closed["design_closed"])
-        self.assertNotEqual(closed["risk"], "high")
-        self.assertEqual(closed["selected_role"], "luna-max")
-        self.assertEqual(closed["selected_model"], "gpt-5.6-luna")
-        self.assertEqual(closed["selected_effort"], "max")
-        self.assertIn("logic_heavy", closed["complexity_signals"])
-        self.assertIn("interacting_explicit_rules", closed["complexity_signals"])
-        self.assertIn("exact_mechanical_oracle", closed["complexity_signals"])
+        tiers = {
+            "luna-medium-mechanical-implementation": (
+                "luna-medium",
+                "literal_mechanical_change",
+            ),
+            "luna-high-explicit-rule-implementation": (
+                "luna-high",
+                "multiple_explicit_rules",
+            ),
+            "luna-xhigh-interacting-implementation": (
+                "luna-xhigh",
+                "interacting_explicit_rules",
+            ),
+            "luna-max-closed-logic-heavy-implementation": (
+                "luna-max",
+                "logic_heavy",
+            ),
+        }
+        for case_id, (role, distinguishing_signal) in tiers.items():
+            with self.subTest(case=case_id):
+                receipt = receipts[case_id]
+                self.assertEqual(receipt["phase"], "implementation")
+                self.assertEqual(receipt["work_mode"], "implementation")
+                self.assertTrue(receipt["scope_closed"])
+                self.assertTrue(receipt["design_closed"])
+                self.assertNotEqual(receipt["risk"], "high")
+                self.assertEqual(receipt["selected_role"], role)
+                self.assertEqual(receipt["selected_model"], "gpt-5.6-luna")
+                self.assertIn(distinguishing_signal, receipt["complexity_signals"])
+                self.assertIn("exact_mechanical_oracle", receipt["complexity_signals"])
+
+                config = read_role(role)
+                self.assertIn("implementation", config["description"])
+                self.assertIn(
+                    "Implement authorized code changes",
+                    config["developer_instructions"],
+                )
 
         reopened = receipts["sol-xhigh-reopened-implementation-design"]
         self.assertEqual(reopened["phase"], "implementation")
         self.assertFalse(reopened["design_closed"])
         self.assertEqual(reopened["selected_role"], "sol-xhigh")
 
+        self.assertIn("Luna Medium is the lowest named route", policy)
         self.assertIn("primary route for logic-heavy implementation", policy)
         self.assertIn("non-mechanical writes", policy)
-        self.assertIn("logic-heavy implementation", luna["description"])
-        self.assertIn("Implement the authorized code changes", luna["developer_instructions"])
+        self.assertIn("`medium -> high -> xhigh -> max`", policy)
 
     def test_runtime_model_cache_reports_missing_or_corrupt_efforts(self):
         verifier = load_verifier()

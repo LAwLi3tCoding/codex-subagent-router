@@ -22,13 +22,15 @@ Canonical 角色统一使用 `{family}-{effort}` 命名。本版本支持：
 
 | 家族 | Canonical effort |
 | --- | --- |
-| Luna | `low`、`medium`、`high`、`xhigh`、`max` |
+| Luna | `medium`、`high`、`xhigh`、`max` |
 | Terra | `low`、`medium`、`high`、`xhigh`、`max`、`ultra` |
 | Sol | `low`、`medium`、`high`、`xhigh`、`max`、`ultra` |
 
 当前 Codex 运行时元数据把 `ultra` 描述为自动任务委派。它是 Sol/Terra 在异常
 困难且可独立拆分任务中的编排模式，不是高于 `max` 的推理深度；Luna 没有
 Ultra 路由。
+Luna Medium 是最低的具名 Luna 路由；运行时 low 标签仅用于如实显示用户手动
+选择后由父会话继承的模型强度。
 
 Luna 和 Terra 可以收集、转换或整理证据，但不能独立负责架构、安全、发布、
 迁移或其他高风险决策。此类最终结论必须由 Sol 专用角色综合判断。
@@ -61,10 +63,10 @@ Agent 数量、并行或分批方式、最终集成和验证均由父 Agent 根�
 
 设计完成并不自动意味着可以降低模型层级。只有当实现所需的关键决策、接口、
 文件边界、验收证据、禁止选择和独立机械校验方式都已经闭合时，才可以降低
-层级。满足这些条件后，具有大量明确或相互作用规则的重逻辑实现优先使用
-Luna Max；纯字面机械修改可以使用更低的 Luna effort。仍需临场判断的实现使用
-`sol-low`、`sol-medium` 或 `sol-high`；设计重新出现缺口或跨模块原因尚未解决时，
-使用 Sol XHigh 或 Max。
+层级。满足这些条件后，字面或重复性实现使用 Luna Medium，多条显式规则实现
+使用 Luna High，多文件相互作用实现使用 Luna XHigh，最困难的闭合重逻辑实现
+使用 Luna Max。仍需临场判断的实现使用 `sol-low`、`sol-medium` 或 `sol-high`；
+设计重新出现缺口或跨模块原因尚未解决时，使用 Sol XHigh 或 Max。
 
 新的、更窄且边界完整的任务可以选择更低层级，但同一个尚未解决任务的重试
 仍然只能单向升级。如果子 Agent 执行时发现范围扩大或设计缺口重新出现，必须
@@ -111,7 +113,7 @@ Agent 最终生效的模型和强度生成，不根据角色名生成。完整�
 
 | 子 Agent 最终家族 | Effort | 任务名前缀格式 |
 | --- | --- | --- |
-| `gpt-5.6-luna` | `low` 到 `max` | `gpt56_luna_<effort>` |
+| `gpt-5.6-luna` | 具名角色使用 `medium` 到 `max`；`low` 只用于继承观测 | `gpt56_luna_<effort>` |
 | `gpt-5.6-terra` | `low` 到 `max`、`ultra` | `gpt56_terra_<effort>` |
 | `gpt-5.6-sol` | `low` 到 `max`、`ultra` | `gpt56_sol_<effort>` |
 | 启动前无法取得模型或强度 | — | `runtime_selected` |

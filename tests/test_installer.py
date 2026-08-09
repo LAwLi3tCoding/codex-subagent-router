@@ -9,6 +9,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RETIRED_ROLES = (
+    "luna-low",
     "luna-batch",
     "luna-reasoner",
     "terra-explorer",
@@ -139,7 +140,7 @@ class InstallerContractTest(unittest.TestCase):
             self.assertIn("<!-- CODEX-SUBAGENT-ROUTER:START -->", guidance)
             for role in RETIRED_ROLES:
                 self.assertFalse((codex_home / "agents" / f"{role}.toml").exists())
-            self.assertTrue((codex_home / "agents" / "luna-low.toml").is_file())
+            self.assertFalse((codex_home / "agents" / "luna-low.toml").exists())
             self.assertTrue((codex_home / "agents" / "terra-ultra.toml").is_file())
             self.assertTrue((codex_home / "agents" / "sol-ultra.toml").is_file())
             self.assertTrue(
@@ -233,7 +234,7 @@ class InstallerContractTest(unittest.TestCase):
 
             expected_roles = {"default": (None, None)}
             for family, efforts in {
-                "luna": ("low", "medium", "high", "xhigh", "max"),
+                "luna": ("medium", "high", "xhigh", "max"),
                 "terra": ("low", "medium", "high", "xhigh", "max", "ultra"),
                 "sol": ("low", "medium", "high", "xhigh", "max", "ultra"),
             }.items():

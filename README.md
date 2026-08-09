@@ -47,6 +47,93 @@ The global policy keeps delegation selective, requires one-way escalation,
 preserves single-writer boundaries, and leaves concurrency, batching, final
 integration, and verification decisions with the parent agent.
 
+## How model and effort are selected
+
+Routing is a two-step decision: select the family from the kind of work and its
+authority boundary, then select effort from the complexity that remains inside
+that family. A higher effort never compensates for choosing the wrong family.
+
+### Step 1: select the model family
+
+| Candidate | Select it when | Do not select it when |
+| --- | --- | --- |
+| Work directly | Delegation would not materially improve speed, quality, isolation, or independent review | A bounded child assignment has a concrete benefit |
+| `default` | The child affirmatively needs the same model and effort already selected for the parent session, and no named specialist is a better fit | It is merely unclear which specialist to use, or the parent tier is too weak |
+| Luna (`gpt-5.6-luna`) | The scope, design, interfaces, file boundaries, prohibited choices, acceptance criteria, and mechanical oracle are all complete | Exploration is open-ended, implementation needs local judgment, risk is high, or the oracle is incomplete |
+| Terra (`gpt-5.6-terra`) | The assignment is read-only exploration, source research, relationship mapping, or evidence synthesis | The child must edit files or own an architecture, security, migration, release, or other high-risk conclusion |
+| Sol (`gpt-5.6-sol`) | The work requires local judgment, non-mechanical writing, review, verification, architecture, conflict resolution, or a high-risk final decision | A cheaper closed Luna or read-only Terra assignment fully satisfies the boundary |
+
+Mixed work is split at its authority boundary. For example, Terra can map a call
+graph, Luna can implement a fully specified patch, and Sol can own the final
+cross-component decision. The route is re-evaluated between those phases.
+
+### Step 2: select reasoning effort
+
+Choose the lowest effort whose conditions are all positively established. An
+unknown condition blocks a downgrade; it is not evidence that the task is easy.
+
+| Effort | Complexity signals | Selection boundary |
+| --- | --- | --- |
+| `low` | One narrow step, complete inputs, low risk, and one exact acceptance check | Available as a named Terra or Sol role. Luna Low is observation-only when `default` inherits that parent setting. |
+| `medium` | Routine bounded multi-step work with established patterns and little interaction | Use when the steps are known and neighboring choices are easy to reject mechanically. |
+| `high` | Several explicit constraints or edge cases within a bounded area | Use when deeper reasoning is required but the causes, modules, or decisions do not materially interact. |
+| `xhigh` | At least two interacting signals: multiple modules, several plausible causes, substantial edge cases, or conflicting evidence | Use when interactions must be reconciled, but the assignment is still one bounded workstream. |
+| `max` | The hardest single bounded assignment | For Luna, this means closed logic-heavy work with an exact oracle; for Terra, the hardest read-only synthesis; for Sol, high-risk judgment or full cross-component design. |
+| `ultra` | At least two genuinely independent workstreams that benefit from automatic delegation | Sol or Terra only. It is an orchestration mode, not a quality rank above `max` and not a retry tier. |
+
+### Canonical family and effort combinations
+
+Luna roles are implementation-capable only under the closed-design contract. The
+result must be independently and mechanically verified.
+
+| Role | Typical assignment | Stop or escalate when |
+| --- | --- | --- |
+| `luna-medium` | Literal edits, repetitive conversions, generated mappings, or a simple implementation with no materially interacting rules | Multiple explicit rules begin to interact, or any required decision is missing |
+| `luna-high` | Several explicit rules and edge cases inside one bounded subsystem | Rules span interacting modules or the expected result is no longer exact |
+| `luna-xhigh` | Interacting explicit rules across several specified files, with every decision and expected result already fixed | The implementation reopens design, introduces an unresolved cause, or becomes high risk |
+| `luna-max` | The hardest closed implementation: many interacting branches, states, or business rules with an exact oracle | Scope, design, or verification ceases to be complete; move to the appropriate Sol role |
+
+Terra roles never write. Raising Terra effort increases research depth, not its
+authority.
+
+| Role | Typical assignment | Stop or escalate when |
+| --- | --- | --- |
+| `terra-low` | Locate one known symbol, file, fact, or source with an exact readback | The lookup expands into relationship mapping or ambiguity |
+| `terra-medium` | Map a routine call path or inventory a bounded set of files and references | Several sources or constraints must be reconciled |
+| `terra-high` | Compare multiple sources or trace several explicit relationships and edge cases | Evidence conflicts or multiple modules interact materially |
+| `terra-xhigh` | Reconcile broad cross-module evidence, plausible causes, or conflicting sources | The assignment becomes the hardest single synthesis or requires a final judgment |
+| `terra-max` | Perform the hardest single bounded read-only investigation or evidence synthesis | The work separates into independent research streams or crosses into decision authority |
+| `terra-ultra` | Orchestrate at least two independent read-only research streams | The streams are not truly independent, or any downstream write or high-risk conclusion is required |
+
+Sol owns judgment and write authority outside Luna's mechanical contract.
+
+| Role | Typical assignment | Stop or escalate when |
+| --- | --- | --- |
+| `sol-low` | One narrow, low-risk change or verification step that still needs limited local judgment | The task becomes multi-step or adds explicit edge cases |
+| `sol-medium` | Routine bounded implementation, review, or verification using established patterns | Several constraints or edge cases require deeper reconciliation |
+| `sol-high` | Judgment-heavy work with several explicit constraints or edge cases | Multiple modules, plausible causes, or conflicting evidence interact |
+| `sol-xhigh` | Complex cross-file implementation, analysis, debugging, planning, or review with interacting signals | Evidence remains unstable, risk becomes high, or full solution design is required |
+| `sol-max` | High-risk final judgment, unstable XHigh evidence, or the hardest cross-component architecture and solution design | The assignment contains multiple genuinely independent workstreams |
+| `sol-ultra` | Orchestrate exceptional Sol work that can be divided into at least two independent streams | The work is one hard bounded assignment; use `sol-max` instead |
+
+### Selection examples
+
+| Remaining assignment | Route | Why |
+| --- | --- | --- |
+| Rename a specified field in known files and pass an exact fixture | `luna-medium` | Closed, literal implementation with a mechanical oracle |
+| Implement several specified validation rules and edge cases in one module | `luna-high` | Multiple explicit rules, but no cross-module interaction |
+| Implement a fully designed state transition across named files with exact tests | `luna-xhigh` or `luna-max` | Use XHigh for interacting files; Max when many branches, states, or rules make it the hardest closed assignment |
+| Discover where a request field is transformed across a bounded call path | `terra-medium` | Read-only relationship mapping with established scope |
+| Reconcile conflicting behavior evidence across several modules | `terra-xhigh` | Multiple modules and conflicting evidence interact, but no final decision is delegated |
+| Implement a bounded feature whose design still requires local trade-offs | `sol-medium` to `sol-xhigh` | The missing mechanical closure blocks Luna; effort follows the remaining interactions |
+| Decide a high-risk migration or security boundary from gathered evidence | `sol-max` | High-risk final judgment cannot be owned by Luna or Terra |
+| Investigate several independent subsystems in parallel | `terra-ultra` | Multiple independent read-only workstreams benefit from orchestration |
+
+For retries of the same unresolved assignment, effort only escalates within the
+family: Luna uses `medium -> high -> xhigh -> max`; Terra and Sol use
+`low -> medium -> high -> xhigh -> max`. If Luna loses design closure or Terra
+needs to write, change family to Sol instead of compensating with more effort.
+
 ## Routing receipt and precedence
 
 Every child prompt carries a compact routing receipt: remaining work, delegation

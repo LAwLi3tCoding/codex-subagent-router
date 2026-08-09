@@ -20,28 +20,32 @@ def load_module(name: str, path: Path):
 
 
 class InstallerContractTest(unittest.TestCase):
-    def test_task_names_carry_app_visible_route_prefixes(self):
+    def test_task_names_use_effective_model_not_role_names(self):
         policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
             encoding="utf-8"
         )
-        expected_prefixes = {
-            "default": "default_inherited",
-            "luna-batch": "luna56_medium",
-            "luna-reasoner": "luna56_max",
-            "terra-explorer": "terra56_medium",
-            "terra-researcher": "terra56_high",
-            "sol-high": "sol56_high",
-            "sol-xhigh": "sol56_xhigh",
-            "sol-max": "sol56_max",
-            "sol-ultra": "sol56_max_ultra",
-        }
+        expected_model_tags = (
+            ("gpt-5.6-luna", "medium", "5_6_luna_medium"),
+            ("gpt-5.6-luna", "max", "5_6_luna_max"),
+            ("gpt-5.6-terra", "medium", "5_6_terra_medium"),
+            ("gpt-5.6-terra", "high", "5_6_terra_high"),
+            ("gpt-5.6-sol", "high", "5_6_sol_high"),
+            ("gpt-5.6-sol", "xhigh", "5_6_sol_xhigh"),
+            ("gpt-5.6-sol", "max", "5_6_sol_max"),
+        )
 
         self.assertIn("Every spawn must set `task_name`", policy)
         self.assertIn("`<route_tag>_<short_purpose>`", policy)
         self.assertIn("must be the first component", policy)
-        for role, prefix in expected_prefixes.items():
-            self.assertIn(f"`{role}` -> `{prefix}`", policy)
-        self.assertIn("unlisted role -> `runtime_selected`", policy)
+        self.assertIn("effective model and reasoning effort", policy)
+        self.assertIn("Never derive the tag from the role name", policy)
+        for model, effort, prefix in expected_model_tags:
+            self.assertIn(f"`{model}` + `{effort}` -> `{prefix}`", policy)
+        label_section = policy.split("### App-visible task-name labels", 1)[1].split(
+            "### Default inheritance", 1
+        )[0]
+        self.assertNotIn("5_6_sol_max_ultra", label_section)
+        self.assertIn("not available before spawn -> `runtime_selected`", policy)
 
     def test_model_roles_enforce_capability_boundaries(self):
         policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(

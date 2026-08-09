@@ -22,22 +22,31 @@ must be the first component so the Codex App's Subagents list exposes the select
 model tier and reasoning effort directly in each task title. Keep the purpose
 short and use only lowercase letters, digits, and underscores.
 
-- `default` -> `default_inherited`
-- `luna-batch` -> `luna56_medium`
-- `luna-reasoner` -> `luna56_max`
-- `terra-explorer` -> `terra56_medium`
-- `terra-researcher` -> `terra56_high`
-- `sol-high` -> `sol56_high`
-- `sol-xhigh` -> `sol56_xhigh`
-- `sol-max` -> `sol56_max`
-- `sol-ultra` -> `sol56_max_ultra`
-- unlisted role -> `runtime_selected`
+Derive the route tag from the child's effective model and reasoning effort after
+normal Codex configuration precedence is resolved. Never derive the tag from the role name.
+A role may help select a configuration, but two roles that resolve to the same
+model and effort must receive the same tag.
 
-For example, an XHigh review uses `sol56_xhigh_review_installer`. Apply the
-prefix to every child, including parallel children, retries, and escalations.
-The title prefix communicates the router's selected configuration; the
+- `gpt-5.6-luna` + `medium` -> `5_6_luna_medium`
+- `gpt-5.6-luna` + `max` -> `5_6_luna_max`
+- `gpt-5.6-terra` + `medium` -> `5_6_terra_medium`
+- `gpt-5.6-terra` + `high` -> `5_6_terra_high`
+- `gpt-5.6-sol` + `high` -> `5_6_sol_high`
+- `gpt-5.6-sol` + `xhigh` -> `5_6_sol_xhigh`
+- `gpt-5.6-sol` + `max` -> `5_6_sol_max`
+- effective model or effort not available before spawn -> `runtime_selected`
+
+For example, a Luna Max task uses `5_6_luna_max_analyze_rules`, encoding the
+human-readable label `5.6 · luna · max` within the identifier-safe task name.
+An XHigh review uses `5_6_sol_xhigh_review_installer`. Apply the prefix to every
+child, including parallel children, retries, and escalations.
+Both `sol-max` and `sol-ultra` currently resolve to `gpt-5.6-sol` with `max`
+reasoning, so both use `5_6_sol_max`; `ultra` is not part of the model label.
+For `default`, use the current parent model and effort only when both effective
+values are explicitly available before spawn. Otherwise use `runtime_selected`
+instead of guessing inherited values. The title prefix communicates the resolved
+pre-spawn selection; the
 `SubagentStart` hook remains the source for the runtime model actually used.
-Never replace `default_inherited` with a guessed model or reasoning value.
 
 ### Default inheritance
 

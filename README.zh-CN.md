@@ -47,27 +47,29 @@ Subagent started | role: sol-xhigh | model: gpt-5.6-sol | reasoning: xhigh
 在 Codex App 的 **Subagents** 列表中。例如：
 
 ```text
-sol56_xhigh_review_installer
+5_6_luna_max_analyze_rules
 ```
 
-当前 App 会把这个任务名显示为列表行标题，因此无需进入子线程就能看到
-`SOL56` 和 `XHIGH`。这是文本前缀，并非 App 原生 badge。完整映射如下：
+当前 App 会把这个标识符显示为列表行标题。开头字段表达的可读文案是
+`5.6 · luna · max`；由于 Codex 任务名只允许小写字母、数字和下划线，实际
+参数必须使用下划线编码。这是文本前缀，并非 App 原生 badge。标签根据子
+Agent 最终生效的模型和强度生成，不根据角色名生成。完整映射如下：
 
-| 角色 | 任务名前缀 |
-| --- | --- |
-| `default` | `default_inherited` |
-| `luna-batch` | `luna56_medium` |
-| `luna-reasoner` | `luna56_max` |
-| `terra-explorer` | `terra56_medium` |
-| `terra-researcher` | `terra56_high` |
-| `sol-high` | `sol56_high` |
-| `sol-xhigh` | `sol56_xhigh` |
-| `sol-max` | `sol56_max` |
-| `sol-ultra` | `sol56_max_ultra` |
-| 未列出的角色 | `runtime_selected` |
+| 子 Agent 最终生效模型 | 强度 | 任务名前缀 |
+| --- | --- | --- |
+| `gpt-5.6-luna` | `medium` | `5_6_luna_medium` |
+| `gpt-5.6-luna` | `max` | `5_6_luna_max` |
+| `gpt-5.6-terra` | `medium` | `5_6_terra_medium` |
+| `gpt-5.6-terra` | `high` | `5_6_terra_high` |
+| `gpt-5.6-sol` | `high` | `5_6_sol_high` |
+| `gpt-5.6-sol` | `xhigh` | `5_6_sol_xhigh` |
+| `gpt-5.6-sol` | `max` | `5_6_sol_max` |
+| 启动前无法取得模型或强度 | — | `runtime_selected` |
 
-标题前缀用于快速识别路由选择；生命周期消息仍负责校验 Codex 实际使用的
-运行时模型。
+例如，`sol-max` 和 `sol-ultra` 当前最终都是 Sol Max，因此都使用
+`5_6_sol_max`，不会把编排角色写进模型标签。`default` 只有在启动前能够明确
+取得父会话最终模型和强度时才生成具体标签，否则使用 `runtime_selected`。
+生命周期消息仍负责校验 Codex 实际使用的运行时模型。
 
 ## 安装
 

@@ -87,6 +87,33 @@ class InstallerContractTest(unittest.TestCase):
         self.assertIn("orchestration role", ultra["description"])
         self.assertIn("Ultra is an orchestration pattern", policy)
 
+    def test_routes_are_re_evaluated_for_remaining_work(self):
+        policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
+            encoding="utf-8"
+        )
+        default = tomllib.loads(
+            (REPO_ROOT / "agents" / "default.toml").read_text(encoding="utf-8")
+        )
+        sol_high = tomllib.loads(
+            (REPO_ROOT / "agents" / "sol-high.toml").read_text(encoding="utf-8")
+        )
+
+        self.assertIn("remaining assignment", policy)
+        self.assertIn("not the parent agent's model", policy)
+        for boundary in (
+            "design -> implementation",
+            "implementation -> verification",
+            "exploration -> decision",
+            "task split or handoff",
+        ):
+            self.assertIn(boundary, policy)
+        self.assertIn("does not by itself justify a cheaper route", policy)
+        self.assertIn("same unresolved assignment", policy)
+        self.assertIn("may select a lower tier", policy)
+        self.assertIn("return the evidence and scope change to the parent", policy)
+        self.assertIn("remaining assignment", default["developer_instructions"])
+        self.assertIn("complete design", sol_high["developer_instructions"])
+
     def test_one_command_installer_activates_router(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             codex_home = Path(temp_dir) / ".codex"

@@ -32,6 +32,26 @@ The global policy keeps delegation selective, requires one-way escalation,
 preserves single-writer boundaries, and leaves concurrency, batching, final
 integration, and verification decisions with the parent agent.
 
+## Phase and assignment re-evaluation
+
+Routes are selected from the child's remaining work, not inherited from the
+original task's most difficult phase. The parent re-evaluates the route at
+`design -> implementation`, `implementation -> verification`,
+`exploration -> decision`, and every task split or handoff.
+
+A completed design is not an automatic reason to lower the tier. The design must
+actually resolve the decisions, interfaces, boundaries, acceptance evidence, and
+prohibited choices the implementer needs. Once it does, a bounded but demanding
+implementation may use `sol-high` even when its parent used XHigh or Max; mechanical
+edits may use Luna, while unresolved cross-module or architectural work remains on
+XHigh or Max.
+
+A new, narrower assignment may use a lower tier. Retrying the same unresolved work
+still follows one-way escalation. If the child's scope expands or design gaps
+reappear, it returns the evidence to the parent for re-routing instead of silently
+stretching its role. Verification is routed independently by the risk and judgment
+needed for the completion claim, which remains owned by the parent.
+
 ## Visible launch details
 
 Every subagent start produces a user-visible lifecycle message in the Codex App

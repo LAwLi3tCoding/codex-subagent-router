@@ -100,6 +100,30 @@ pre-spawn selection; the
    Ultra is an orchestration pattern using a Sol Max leader, not a reasoning
    effort above `max`, and it is not a generic retry tier.
 
+### Re-evaluate at phase and assignment boundaries
+
+- Select the role for the remaining assignment, not the parent agent's model, the
+  original task's peak complexity, or the route used by an earlier phase.
+- Re-evaluate before every spawn and whenever responsibility changes, including
+  `design -> implementation`, `implementation -> verification`,
+  `exploration -> decision`, and a `task split or handoff`.
+- A completed design does not by itself justify a cheaper route. Lower the tier
+  only when the decisions, interfaces, boundaries, acceptance evidence, and
+  prohibited choices needed by the child are actually complete. Once they are,
+  demanding but bounded implementation may use `sol-high`; mechanical edits may
+  use Luna, while multiple modules, interacting edge cases, or unresolved design
+  choices still justify XHigh or Max.
+- A genuinely new and narrower bounded assignment may select a lower tier than an
+  earlier phase. A retry of the same unresolved assignment follows one-way
+  escalation and must not be relabeled as a new phase merely to reset the tier.
+- Treat verification as its own assignment. Explicit mechanical checks may use a
+  cheaper role, but judgment-heavy or high-risk completion claims require Sol-level
+  synthesis and remain owned by the parent agent.
+- If a child discovers missing design decisions, conflicting evidence, or material
+  scope expansion, it must stop before out-of-scope work. It must then
+  return the evidence and scope change to the parent. The parent re-routes the
+  work while preserving the single-writer boundary.
+
 ### Escalation and orchestration
 
 - Escalate in one direction: Luna or Terra -> Sol High -> Sol XHigh -> Sol Max.

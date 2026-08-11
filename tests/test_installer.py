@@ -118,7 +118,7 @@ class InstallerContractTest(unittest.TestCase):
         self.assertIn("may select a lower tier", policy)
         self.assertIn("return the evidence and scope change to the parent", policy)
         self.assertIn("remaining assignment", default["developer_instructions"])
-        self.assertIn("complete design", sol_high["developer_instructions"])
+        self.assertIn("local judgment remains", sol_high["developer_instructions"])
 
     def test_one_command_installer_activates_router(self):
         with tempfile.TemporaryDirectory() as temp_dir:

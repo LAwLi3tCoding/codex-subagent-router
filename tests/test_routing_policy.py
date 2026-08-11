@@ -112,6 +112,65 @@ class RoutingPolicyContractTest(unittest.TestCase):
         self.assertIn("affirmative same-tier match", policy)
         self.assertIn("affirmative same-tier match", default["developer_instructions"])
 
+    def test_policy_uses_positive_delegation_and_family_defaults(self):
+        policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
+            encoding="utf-8"
+        )
+        compact_policy = " ".join(policy.split())
+
+        self.assertIn("Split the task into ready workstreams", compact_policy)
+        self.assertIn("must run them in parallel", compact_policy)
+        self.assertIn("more than a trivial lookup or edit", compact_policy)
+        self.assertIn("does not require `ultra`", compact_policy)
+        self.assertIn("Delegate non-trivial isolated read-only evidence work to Terra by default", compact_policy)
+        self.assertIn("does not need to be present in the original user request", compact_policy)
+        self.assertIn("delegate non-trivial mechanical implementation", compact_policy)
+        self.assertIn("Use Sol only when local judgment remains", compact_policy)
+
+    def test_dispatch_scenarios_cover_parallel_serial_and_direct_decisions(self):
+        payload = json.loads(
+            (REPO_ROOT / "policy" / "routing-scenarios.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        cases = {case["id"]: case for case in payload["dispatch_cases"]}
+
+        self.assertEqual(
+            set(cases),
+            {
+                "direct-trivial-lookup",
+                "parallel-terra-independent-readonly",
+                "parallel-luna-nonoverlapping-implementation",
+                "serial-terra-then-luna",
+                "serial-overlapping-writes",
+                "single-sol-local-judgment",
+            },
+        )
+        self.assertEqual(cases["direct-trivial-lookup"]["expected_mode"], "direct")
+        self.assertEqual(cases["direct-trivial-lookup"]["expected_roles"], [])
+
+        for case_id in (
+            "parallel-terra-independent-readonly",
+            "parallel-luna-nonoverlapping-implementation",
+        ):
+            with self.subTest(case=case_id):
+                case = cases[case_id]
+                self.assertEqual(case["expected_mode"], "parallel")
+                self.assertGreaterEqual(len(case["expected_roles"]), 2)
+                self.assertFalse(any(role.endswith("-ultra") for role in case["expected_roles"]))
+
+        self.assertEqual(cases["serial-terra-then-luna"]["expected_mode"], "serial")
+        self.assertEqual(
+            cases["serial-terra-then-luna"]["expected_roles"],
+            ["terra-medium", "luna-high"],
+        )
+        self.assertEqual(cases["serial-overlapping-writes"]["expected_mode"], "serial")
+        self.assertEqual(cases["single-sol-local-judgment"]["expected_mode"], "single")
+        self.assertEqual(
+            cases["single-sol-local-judgment"]["expected_roles"],
+            ["sol-medium"],
+        )
+
     def test_synthetic_scenarios_cover_every_route_and_invariant(self):
         scenario_path = REPO_ROOT / "policy" / "routing-scenarios.json"
         self.assertTrue(scenario_path.is_file())
@@ -216,6 +275,28 @@ class RoutingPolicyContractTest(unittest.TestCase):
         self.assertIn("primary route for logic-heavy implementation", policy)
         self.assertIn("non-mechanical writes", policy)
         self.assertIn("`medium -> high -> xhigh -> max`", policy)
+
+    def test_sol_implementation_scenarios_require_local_judgment(self):
+        payload = json.loads(
+            (REPO_ROOT / "policy" / "routing-scenarios.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for case in payload["cases"]:
+            receipt = case["receipt"]
+            if receipt["selected_role"] not in {"sol-low", "sol-medium", "sol-high"}:
+                continue
+            if receipt["phase"] != "implementation":
+                continue
+            with self.subTest(case=case["id"]):
+                self.assertFalse(receipt["design_closed"])
+                self.assertIn("local_judgment", receipt["complexity_signals"])
+
+        for role in ("sol-medium", "sol-high"):
+            with self.subTest(role=role):
+                config = read_role(role)
+                self.assertIn("local judgment", config["description"])
+                self.assertIn("local judgment", config["developer_instructions"])
 
     def test_runtime_model_cache_reports_missing_or_corrupt_efforts(self):
         verifier = load_verifier()

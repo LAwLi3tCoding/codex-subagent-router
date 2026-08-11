@@ -43,9 +43,10 @@ high-volume tier, Terra balances intelligence and cost, Sol is the flagship tier
 and `max` is the highest documented reasoning effort. See the
 [official model guidance](https://developers.openai.com/api/docs/guides/latest-model).
 
-The global policy keeps delegation selective, requires one-way escalation,
-preserves single-writer boundaries, and leaves concurrency, batching, final
-integration, and verification decisions with the parent agent.
+The global policy splits work before deciding whether to delegate. Multiple
+independent, non-trivial workstreams run in parallel by default; dependency order,
+overlapping writes, authorization, duplicated context, or excessive integration
+cost keep work direct or serial. The parent still owns integration and verification.
 
 ## How model and effort are selected
 
@@ -57,15 +58,25 @@ that family. A higher effort never compensates for choosing the wrong family.
 
 | Candidate | Select it when | Do not select it when |
 | --- | --- | --- |
-| Work directly | Delegation would not materially improve speed, quality, isolation, or independent review | A bounded child assignment has a concrete benefit |
+| Work directly | The work is trivial, contains no useful child assignment, or a concrete parallel-delegation exception applies | A bounded child assignment has concrete value, or multiple independent non-trivial workstreams are ready |
 | `default` | The child affirmatively needs the same model and effort already selected for the parent session, and no named specialist is a better fit | It is merely unclear which specialist to use, or the parent tier is too weak |
 | Luna (`gpt-5.6-luna`) | The scope, design, interfaces, file boundaries, prohibited choices, acceptance criteria, and mechanical oracle are all complete | Exploration is open-ended, implementation needs local judgment, risk is high, or the oracle is incomplete |
 | Terra (`gpt-5.6-terra`) | The assignment is read-only exploration, source research, relationship mapping, or evidence synthesis | The child must edit files or own an architecture, security, migration, release, or other high-risk conclusion |
 | Sol (`gpt-5.6-sol`) | The work requires local judgment, non-mechanical writing, review, verification, architecture, conflict resolution, or a high-risk final decision | A cheaper closed Luna or read-only Terra assignment fully satisfies the boundary |
 
-Mixed work is split at its authority boundary. For example, Terra can map a call
-graph, Luna can implement a fully specified patch, and Sol can own the final
-cross-component decision. The route is re-evaluated between those phases.
+Mixed work is split at its authority boundary. Non-trivial isolated read-only
+evidence work defaults to Terra. Closure established by the parent during the task
+qualifies for Luna even when it was absent from the original prompt; once complete,
+non-trivial mechanical implementation defaults to the lowest suitable Luna role.
+Sol owns implementation only while local judgment remains. Routes are re-evaluated
+between phases.
+
+When multiple ready workstreams can proceed independently and each is more than a
+trivial lookup or edit, the parent runs them in parallel unless dependency order,
+overlapping writes, authorization, duplicated context, or integration overhead
+erases the expected benefit. Ordinary parallelism uses multiple normal named roles;
+it does not require `ultra`. Ultra is reserved for one child that must itself
+orchestrate an exceptional multi-workstream program.
 
 ### Step 2: select reasoning effort
 
@@ -110,8 +121,8 @@ Sol owns judgment and write authority outside Luna's mechanical contract.
 | Role | Typical assignment | Stop or escalate when |
 | --- | --- | --- |
 | `sol-low` | One narrow, low-risk change or verification step that still needs limited local judgment | The task becomes multi-step or adds explicit edge cases |
-| `sol-medium` | Routine bounded implementation, review, or verification using established patterns | Several constraints or edge cases require deeper reconciliation |
-| `sol-high` | Judgment-heavy work with several explicit constraints or edge cases | Multiple modules, plausible causes, or conflicting evidence interact |
+| `sol-medium` | Routine bounded implementation, review, or verification where local judgment remains | Several constraints or edge cases require deeper reconciliation |
+| `sol-high` | Demanding bounded work where local judgment remains across several explicit constraints or edge cases | Multiple modules, plausible causes, or conflicting evidence interact |
 | `sol-xhigh` | Complex cross-file implementation, analysis, debugging, planning, or review with interacting signals | Evidence remains unstable, risk becomes high, or full solution design is required |
 | `sol-max` | High-risk final judgment, unstable XHigh evidence, or the hardest cross-component architecture and solution design | The assignment contains multiple genuinely independent workstreams |
 | `sol-ultra` | Orchestrate exceptional Sol work that can be divided into at least two independent streams | The work is one hard bounded assignment; use `sol-max` instead |
@@ -127,7 +138,8 @@ Sol owns judgment and write authority outside Luna's mechanical contract.
 | Reconcile conflicting behavior evidence across several modules | `terra-xhigh` | Multiple modules and conflicting evidence interact, but no final decision is delegated |
 | Implement a bounded feature whose design still requires local trade-offs | `sol-medium` to `sol-xhigh` | The missing mechanical closure blocks Luna; effort follows the remaining interactions |
 | Decide a high-risk migration or security boundary from gathered evidence | `sol-max` | High-risk final judgment cannot be owned by Luna or Terra |
-| Investigate several independent subsystems in parallel | `terra-ultra` | Multiple independent read-only workstreams benefit from orchestration |
+| Investigate two independent subsystems in parallel | multiple `terra-medium` children | Ordinary parent-level parallelism does not require Ultra |
+| Orchestrate an exceptional research program inside one child | `terra-ultra` | The child must itself coordinate several independent evidence streams |
 
 For retries of the same unresolved assignment, effort only escalates within the
 family: Luna uses `medium -> high -> xhigh -> max`; Terra and Sol use
@@ -141,11 +153,12 @@ benefit, phase, work mode, closure, risk, complexity signals, independent
 workstreams, selected model and effort, rejected neighboring tiers, and fallback.
 This makes every downgrade, inheritance, and escalation inspectable.
 
-Conflict resolution is fail-closed: split mixed evidence/write/decision/verification
-work into sequential assignments; choose family before effort; require every
-downgrade condition; allow any high-risk signal to block a cheaper route; and never
-treat unknown state as evidence for downgrading. `default` is considered last and
-requires an affirmative same-tier reason.
+Conflict resolution is fail-closed: authorization and single-writer boundaries
+come first; split the task before deciding between parallel, serial, or direct
+execution; then choose family before effort. Every downgrade condition must hold,
+any high-risk signal may block a cheaper route, and unknown state never proves a
+downgrade. `default` is considered last and requires an affirmative same-tier
+reason.
 
 ## Phase and assignment re-evaluation
 
@@ -156,10 +169,11 @@ original task's most difficult phase. The parent re-evaluates the route at
 
 A completed design is not an automatic reason to lower the tier. The design must
 actually resolve the decisions, interfaces, file boundaries, acceptance evidence,
-prohibited choices, and an independent mechanical oracle. When all of those stay
-closed, route literal or repetitive implementation to Luna Medium, explicit
-multi-rule implementation to Luna High, interacting multi-file implementation to
-Luna XHigh, and the hardest closed logic-heavy implementation to Luna Max.
+prohibited choices, and an independent mechanical oracle. The parent may establish
+that closure during the task. When all of those stay closed, delegate non-trivial
+literal or repetitive implementation to Luna Medium, explicit multi-rule
+implementation to Luna High, interacting multi-file implementation to Luna XHigh,
+and the hardest closed logic-heavy implementation to Luna Max.
 Implementation that still needs local judgment uses `sol-low`, `sol-medium`, or
 `sol-high`, while reopened design or unresolved cross-module work uses Sol XHigh
 or Max.

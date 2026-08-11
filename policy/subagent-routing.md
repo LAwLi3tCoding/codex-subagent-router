@@ -1,7 +1,7 @@
 ## Automatic subagent model routing
 
-Apply this policy whenever subagents are available. Work directly when delegation
-would not materially improve speed, quality, isolation, or independent review.
+Apply this policy whenever subagents are available. Split the task into ready
+workstreams before deciding whether to delegate or work directly.
 
 ### Visible launch disclosure
 
@@ -123,24 +123,38 @@ Luna Medium is the lowest named route. Its closed implementation tiers are:
 
 ### Selection rules
 
-1. Work directly when delegation has no material benefit.
-2. Identify the remaining phase and work mode before selecting a family. Split
-   evidence collection, implementation, final judgment, and verification when
-   their boundaries or best families differ.
-3. Use Luna only when scope, design inputs, decisions, interfaces, file boundaries,
+1. Split the task into ready workstreams before deciding whether to delegate.
+   Keep dependent phases serial and identify independent workstreams separately.
+2. When two or more bounded workstreams are ready, can proceed independently before
+   integration, and each requires more than a trivial lookup or edit, the parent
+   must run them in parallel unless dependency order, overlapping writes,
+   authorization constraints, duplicated context, or integration overhead would
+   erase the expected latency or quality benefit. Limit launches by the ready
+   workstreams and safe runtime capacity; never create children merely to satisfy a
+   count.
+3. Delegate one bounded workstream when it provides concrete speed, quality,
+   isolation, or independent-review value. Work directly only when the remaining
+   work is trivial, contains no useful child assignment, or an exception in rule 2
+   applies.
+4. Delegate non-trivial isolated read-only evidence work to Terra by default,
+   including evidence phases split from mixed investigation-and-write tasks. Route
+   downstream writes or high-risk conclusions separately, and keep final synthesis
+   with the parent or an appropriate Sol specialist.
+5. Use Luna only when scope, design inputs, decisions, interfaces, file boundaries,
    acceptance criteria, prohibited choices, and the mechanical oracle are complete.
-   Select Luna Medium, High, XHigh, or Max from the closed implementation tiers
-   above. Missing or uncertain closure blocks every Luna route.
-4. Use Terra for broad read-only evidence work. Route the downstream write or
-   high-risk conclusion separately to Sol.
-5. Use Sol for non-mechanical writes, any implementation that does not satisfy the
-   Luna closed-implementation contract, judgment-heavy synthesis, and final
+   That closure may be established by the parent during exploration or design and
+   does not need to be present in the original user request. Once complete,
+   delegate non-trivial mechanical implementation to the lowest suitable Luna role
+   by default. Missing or uncertain closure blocks every Luna route.
+6. Use Sol only when local judgment remains, including non-mechanical writes, for
+   judgment-heavy synthesis or verification, or for architecture and final
    high-risk conclusions. Choose the lowest effort whose explicit conditions are
    all satisfied.
-6. Use `default` only for an affirmative same-tier match, never merely because no
+7. Use `default` only for an affirmative same-tier match, never merely because no
    specialist was selected.
-7. Use `ultra` only for exceptional independently decomposable work; otherwise use
-   the appropriate single-assignment effort through `max`.
+8. Ordinary parent-level parallel delegation may use multiple Luna, Terra, or Sol
+   children and does not require `ultra`. Use `ultra` only when one child must itself
+   orchestrate an exceptional multi-workstream program.
 
 ### Routing decision receipt
 
@@ -169,19 +183,23 @@ private values, or unrelated user context in it.
 
 Apply these rules in order when signals overlap:
 
-1. Direct-work and authorization boundaries come before model selection.
+1. Authorization and single-writer boundaries come before routing.
 2. Split mixed-mode work into sequential assignments when evidence gathering,
-   writing, final judgment, or verification need different families.
-3. High-risk final decisions require Sol even when Terra or Luna can prepare the
+   writing, final judgment, or verification phases depend on each other; split
+   independent phases into separate ready workstreams.
+3. Apply the positive parallel-delegation trigger before considering direct work.
+4. Direct work is allowed only under the trivial-work, no-useful-child, or concrete
+   exception boundaries in the selection rules.
+5. High-risk final decisions require Sol even when Terra or Luna can prepare the
    evidence.
-4. Choose family before effort; do not compensate for the wrong family by raising
+6. Choose family before effort; do not compensate for the wrong family by raising
    effort.
-5. A lower tier requires all downgrade conditions to be positively established.
-6. Any high-risk escalation signal is sufficient to block the cheaper route and
+7. A lower tier requires all downgrade conditions to be positively established.
+8. Any high-risk escalation signal is sufficient to block the cheaper route and
    select the appropriate stronger Sol route.
-7. Unknown is not evidence for a cheaper route. Preserve the current safe tier or
+9. Unknown is not evidence for a cheaper route. Preserve the current safe tier or
    escalate until the uncertainty is resolved.
-8. `default` is last: use it only after proving an affirmative same-tier match.
+10. `default` is last: use it only after proving an affirmative same-tier match.
 
 ### Runtime compatibility fallback
 
@@ -211,13 +229,14 @@ Apply these rules in order when signals overlap:
 - A completed design does not by itself justify a cheaper route. Lower the tier
   only when the decisions, interfaces, file boundaries, acceptance evidence,
   prohibited choices, and independent mechanical oracle needed by the child are
-  actually complete. Once they are, route literal or repetitive implementation to
-  Luna Medium, explicit multi-rule implementation to Luna High, interacting
-  multi-file implementation to Luna XHigh, and the hardest closed logic-heavy
-  implementation to Luna Max. Bounded implementation that still requires local
-  judgment may use `sol-low`, `sol-medium`, or `sol-high`, while reopened design,
-  interacting unresolved causes, or unstable cross-component decisions justify
-  Sol XHigh or Max.
+  actually complete. The parent may establish that closure during the task; it
+  need not come from the original user prompt. Once complete, delegate non-trivial
+  literal or repetitive implementation to Luna Medium, explicit multi-rule
+  implementation to Luna High, interacting multi-file implementation to Luna
+  XHigh, and the hardest closed logic-heavy implementation to Luna Max. Bounded
+  implementation that still requires local judgment may use `sol-low`,
+  `sol-medium`, or `sol-high`, while reopened design, interacting unresolved causes,
+  or unstable cross-component decisions justify Sol XHigh or Max.
 - A genuinely new and narrower bounded assignment may select a lower tier than an
   earlier phase. A retry of the same unresolved assignment follows one-way
   escalation and must not be relabeled as a new phase merely to reset the tier.
@@ -239,8 +258,10 @@ Apply these rules in order when signals overlap:
   the family boundary. Move Terra work to Sol before any write. A closed mechanical
   code write alone does not force Luna to Sol, but higher Luna or Terra effort is
   never a substitute for Sol authority outside those boundaries.
-- Select Sol or Terra `ultra` only when exceptional parallel decomposition is
-  useful. Ultra is automatic delegation, not the next retry after `max`.
+- Ordinary parent-level parallel delegation uses the lowest suitable named role for
+  each workstream and does not require `ultra`. Select Sol or Terra `ultra` only
+  when one child must itself orchestrate an exceptional multi-workstream program;
+  Ultra is not the next retry after `max`.
 - Stop the previous writer before escalating a write task. Never let two agents
   write the same checkout, branch, or file boundary concurrently.
 - The parent agent owns decomposition, task boundaries, integration, conflict

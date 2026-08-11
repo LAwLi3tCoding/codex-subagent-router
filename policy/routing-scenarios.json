@@ -151,14 +151,14 @@
     {
       "id": "terra-low-focused-lookup",
       "receipt": {
-        "remaining_work": "Locate one symbol and return its exact source",
+        "remaining_work": "Locate one symbol for an independent evidence lane while the parent handles another workstream",
         "delegation_benefit": true,
         "phase": "exploration",
         "work_mode": "read_only",
         "scope_closed": true,
         "design_closed": false,
         "risk": "low",
-        "complexity_signals": [],
+        "complexity_signals": ["parallel_evidence_lane"],
         "independent_workstreams": 1,
         "same_tier_required": false,
         "selected_role": "terra-low",
@@ -277,63 +277,63 @@
     {
       "id": "sol-low-straightforward-implementation",
       "receipt": {
-        "remaining_work": "Implement one low-risk method from a complete design",
+        "remaining_work": "Implement one low-risk method whose error handling requires a local choice",
         "delegation_benefit": true,
         "phase": "implementation",
         "work_mode": "implementation",
         "scope_closed": true,
-        "design_closed": true,
+        "design_closed": false,
         "risk": "low",
-        "complexity_signals": [],
+        "complexity_signals": ["local_judgment"],
         "independent_workstreams": 1,
         "same_tier_required": false,
         "selected_role": "sol-low",
         "selected_model": "gpt-5.6-sol",
         "selected_effort": "low",
         "rejected_lower_tier": "This is the lowest supported Sol effort",
-        "rejected_higher_tier": "The implementation is narrow with an exact test",
+        "rejected_higher_tier": "The remaining judgment is narrow and covered by an exact test",
         "fallback": "sol-medium"
       }
     },
     {
       "id": "sol-medium-routine-implementation",
       "receipt": {
-        "remaining_work": "Implement a routine multi-step slice with established patterns",
+        "remaining_work": "Implement a routine multi-step slice whose local conventions require implementation choices",
         "delegation_benefit": true,
         "phase": "implementation",
         "work_mode": "implementation",
         "scope_closed": true,
-        "design_closed": true,
+        "design_closed": false,
         "risk": "standard",
-        "complexity_signals": ["multiple_steps"],
+        "complexity_signals": ["multiple_steps", "local_judgment"],
         "independent_workstreams": 1,
         "same_tier_required": false,
         "selected_role": "sol-medium",
         "selected_model": "gpt-5.6-sol",
         "selected_effort": "medium",
         "rejected_lower_tier": "The slice has several dependent steps",
-        "rejected_higher_tier": "Patterns and acceptance checks are established",
+        "rejected_higher_tier": "The local choices do not interact across modules",
         "fallback": "sol-high"
       }
     },
     {
       "id": "sol-high-demanding-bounded-implementation",
       "receipt": {
-        "remaining_work": "Implement a demanding bounded slice with explicit edge cases",
+        "remaining_work": "Implement a demanding bounded slice whose explicit edge cases require contextual tradeoffs",
         "delegation_benefit": true,
         "phase": "implementation",
         "work_mode": "implementation",
         "scope_closed": true,
-        "design_closed": true,
+        "design_closed": false,
         "risk": "standard",
-        "complexity_signals": ["several_constraints", "explicit_edge_cases"],
+        "complexity_signals": ["several_constraints", "explicit_edge_cases", "local_judgment"],
         "independent_workstreams": 1,
         "same_tier_required": false,
         "selected_role": "sol-high",
         "selected_model": "gpt-5.6-sol",
         "selected_effort": "high",
         "rejected_lower_tier": "Several constraints need deeper reasoning",
-        "rejected_higher_tier": "The constraints do not interact across modules",
+        "rejected_higher_tier": "The contextual choices do not interact across modules",
         "fallback": "sol-xhigh"
       }
     },
@@ -420,6 +420,50 @@
         "rejected_higher_tier": "Ultra is the runtime orchestration mode",
         "fallback": "sol-max"
       }
+    }
+  ],
+  "dispatch_cases": [
+    {
+      "id": "direct-trivial-lookup",
+      "prompt": "Read one known constant from one specified file.",
+      "expected_mode": "direct",
+      "expected_roles": [],
+      "reason": "Delegation overhead exceeds a trivial lookup."
+    },
+    {
+      "id": "parallel-terra-independent-readonly",
+      "prompt": "Map two independent subsystem call paths and return evidence for both before synthesis.",
+      "expected_mode": "parallel",
+      "expected_roles": ["terra-medium", "terra-medium"],
+      "reason": "Two non-trivial read-only evidence lanes can progress independently."
+    },
+    {
+      "id": "parallel-luna-nonoverlapping-implementation",
+      "prompt": "Implement two fully specified validation-rule sets in non-overlapping modules with exact tests.",
+      "expected_mode": "parallel",
+      "expected_roles": ["luna-high", "luna-high"],
+      "reason": "Both mechanical implementations are closed and have disjoint write ownership."
+    },
+    {
+      "id": "serial-terra-then-luna",
+      "prompt": "Find the transformation boundary, then implement the specified rules there with an exact test.",
+      "expected_mode": "serial",
+      "expected_roles": ["terra-medium", "luna-high"],
+      "reason": "The implementation boundary depends on the evidence result."
+    },
+    {
+      "id": "serial-overlapping-writes",
+      "prompt": "Apply two fully specified mechanical changes that both edit the same registry file.",
+      "expected_mode": "serial",
+      "expected_roles": ["luna-medium", "luna-medium"],
+      "reason": "Overlapping write ownership blocks parallel writers."
+    },
+    {
+      "id": "single-sol-local-judgment",
+      "prompt": "Implement one bounded slice whose error handling must be chosen from local conventions.",
+      "expected_mode": "single",
+      "expected_roles": ["sol-medium"],
+      "reason": "The remaining local judgment blocks Luna but does not require multiple children."
     }
   ]
 }

@@ -1,19 +1,27 @@
 import importlib.util
-import json
+import shutil
 import subprocess
 import tempfile
 import tomllib
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+EXPECTED_ROLES = {
+    "sol-low": ("gpt-6.1-sol", "low", None),
+    "sol-medium": ("gpt-6.1-sol", "medium", None),
+    "sol-high": ("gpt-6.1-sol", "high", None),
+    "sol-xhigh": ("gpt-6.1-sol", "xhigh", None),
+    "astra-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
+}
 RETIRED_ROLES = (
-    "luna-low",
-    "luna-batch",
-    "luna-reasoner",
-    "terra-explorer",
-    "terra-researcher",
+    "default", "explorer", "mechanical", "owner", "high-risk-owner",
+    "luna-low", "luna-batch", "luna-reasoner", "luna-medium", "luna-high",
+    "luna-xhigh", "luna-max", "terra-explorer", "terra-researcher", "terra-low",
+    "terra-medium", "terra-high", "terra-xhigh", "terra-max", "terra-ultra",
+    "sol-max", "sol-ultra",
 )
 
 
@@ -26,489 +34,391 @@ def load_module(name: str, path: Path):
     return module
 
 
+def profile_snapshot(root: Path):
+    return {
+        str(path.relative_to(root)): (
+            None if path.is_dir() else path.read_bytes(),
+            path.stat().st_mode & 0o777,
+        )
+        for path in root.rglob("*")
+    }
+
+
 class InstallerContractTest(unittest.TestCase):
-    def test_task_names_use_effective_model_not_role_names(self):
-        policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
-            encoding="utf-8"
-        )
-        family_efforts = {
-            "luna": ("low", "medium", "high", "xhigh", "max"),
-            "terra": ("low", "medium", "high", "xhigh", "max", "ultra"),
-            "sol": ("low", "medium", "high", "xhigh", "max", "ultra"),
-        }
-        expected_model_tags = tuple(
-            (f"gpt-5.6-{family}", effort, f"gpt56_{family}_{effort}")
-            for family, efforts in family_efforts.items()
-            for effort in efforts
-        )
+    def setUp(self):
+        self.installer = load_module("router_install", REPO_ROOT / "scripts" / "install.py")
+        self.verifier = load_module("router_verify", REPO_ROOT / "scripts" / "verify.py")
+        self.policy_path = REPO_ROOT / "policy" / "subagent-routing.md"
 
-        self.assertIn("Every spawn must set `task_name`", policy)
-        self.assertIn("`<route_tag>_<short_purpose>`", policy)
-        self.assertIn("must be the first component", policy)
-        self.assertIn("effective model and reasoning effort", policy)
-        self.assertIn("Never derive the tag from the role name", policy)
-        for model, effort, prefix in expected_model_tags:
-            self.assertIn(f"`{model}` + `{effort}` -> `{prefix}`", policy)
-        label_section = policy.split("### App-visible task-name labels", 1)[1].split(
-            "### Default inheritance", 1
-        )[0]
-        self.assertNotIn("5_6_", label_section)
-        self.assertIn("`gpt56_luna_max`", label_section)
-        self.assertIn("not available before spawn -> `runtime_selected`", policy)
-
-    def test_model_roles_enforce_capability_boundaries(self):
-        policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
-            encoding="utf-8"
-        )
-        luna = tomllib.loads(
-            (REPO_ROOT / "agents" / "luna-max.toml").read_text(encoding="utf-8")
-        )
-        terra_explorer = tomllib.loads(
-            (REPO_ROOT / "agents" / "terra-medium.toml").read_text(
-                encoding="utf-8"
-            )
-        )
-        terra_researcher = tomllib.loads(
-            (REPO_ROOT / "agents" / "terra-high.toml").read_text(
-                encoding="utf-8"
-            )
-        )
-        ultra = tomllib.loads(
-            (REPO_ROOT / "agents" / "sol-ultra.toml").read_text(encoding="utf-8")
-        )
-
-        self.assertEqual(luna["model_reasoning_effort"], "max")
-        self.assertIn("strictly closed", luna["developer_instructions"])
-        self.assertIn("independently and mechanically verified", policy)
-        self.assertIn("Never route open-ended", policy)
-
-        self.assertEqual(terra_explorer["sandbox_mode"], "read-only")
-        self.assertEqual(terra_researcher["sandbox_mode"], "read-only")
-        self.assertIn("must not make the final decision", policy)
-        self.assertIn("high-risk", terra_explorer["developer_instructions"])
-        self.assertIn("high-risk", terra_researcher["developer_instructions"])
-
-        self.assertEqual(ultra["model"], "gpt-5.6-sol")
-        self.assertEqual(ultra["model_reasoning_effort"], "ultra")
-        self.assertIn("orchestration role", ultra["description"])
-        self.assertIn("automatic task delegation mode", policy)
-
-    def test_routes_are_re_evaluated_for_remaining_work(self):
-        policy = (REPO_ROOT / "policy" / "subagent-routing.md").read_text(
-            encoding="utf-8"
-        )
-        default = tomllib.loads(
-            (REPO_ROOT / "agents" / "default.toml").read_text(encoding="utf-8")
-        )
-        sol_high = tomllib.loads(
-            (REPO_ROOT / "agents" / "sol-high.toml").read_text(encoding="utf-8")
-        )
-
-        self.assertIn("remaining assignment", policy)
-        self.assertIn("not the parent agent's model", policy)
-        for boundary in (
-            "design -> implementation",
-            "implementation -> verification",
-            "exploration -> decision",
-            "task split or handoff",
-        ):
-            self.assertIn(boundary, policy)
-        self.assertIn("does not by itself justify a cheaper route", policy)
-        self.assertIn("same unresolved assignment", policy)
-        self.assertIn("may select a lower tier", policy)
-        self.assertIn("return the evidence and scope change to the parent", policy)
-        self.assertIn("remaining assignment", default["developer_instructions"])
-        self.assertIn("local judgment remains", sol_high["developer_instructions"])
-
-    def test_one_command_installer_activates_router(self):
+    def test_one_command_installer_activates_router_without_hook(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             codex_home = Path(temp_dir) / ".codex"
             result = subprocess.run(
-                [
-                    "sh",
-                    str(REPO_ROOT / "install.sh"),
-                    "--codex-home",
-                    str(codex_home),
-                ],
-                check=False,
-                capture_output=True,
-                text=True,
+                ["sh", str(REPO_ROOT / "install.sh"), "--codex-home", str(codex_home)],
+                check=False, capture_output=True, text=True,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("Router source and installed configuration verified.", result.stdout)
-            guidance = (codex_home / "AGENTS.md").read_text(encoding="utf-8")
-            self.assertIn("<!-- CODEX-SUBAGENT-ROUTER:START -->", guidance)
-            for role in RETIRED_ROLES:
-                self.assertFalse((codex_home / "agents" / f"{role}.toml").exists())
-            self.assertFalse((codex_home / "agents" / "luna-low.toml").exists())
-            self.assertTrue((codex_home / "agents" / "terra-ultra.toml").is_file())
-            self.assertTrue((codex_home / "agents" / "sol-ultra.toml").is_file())
-            self.assertTrue(
-                (codex_home / "hooks" / "codex_subagent_router_disclosure.py").is_file()
-            )
-            hooks = json.loads((codex_home / "hooks.json").read_text(encoding="utf-8"))
-            self.assertEqual(len(hooks["hooks"]["SubagentStart"]), 1)
-
-    def test_install_preserves_unrelated_config_and_enforces_routing_contract(self):
-        installer = load_module("router_install", REPO_ROOT / "scripts" / "install.py")
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            codex_home = root / ".codex"
-            codex_home.mkdir()
-            global_agents = codex_home / "AGENTS.md"
-            config = codex_home / "config.toml"
-            hooks_path = codex_home / "hooks.json"
-            target_agents = codex_home / "agents"
-            target_agents.mkdir()
-            for role in RETIRED_ROLES:
-                (target_agents / f"{role}.toml").write_text(
-                    f'name = "{role}"\nmarker = "retired"\n', encoding="utf-8"
-                )
-
-            global_agents.write_text(
-                "# Existing guidance\n\n"
-                "- Never exceed six children; inherit model defaults absent a concrete reason.\n\n"
-                "Keep this line.\n",
-                encoding="utf-8",
-            )
-            config.write_text(
-                'model = "session-selected-model"\n'
-                'model_reasoning_effort = "high"\n\n'
-                '[agents]\n'
-                'max_concurrent_threads_per_session = 3\n'
-                'max_threads = 2\n'
-                'default_subagent_model = "old-model"\n'
-                'default_subagent_reasoning_effort = "low"\n'
-                'interrupt_message = false\n\n'
-                '[mcp_servers]\n',
-                encoding="utf-8",
-            )
-            config.chmod(0o600)
-            hooks_path.write_text(
-                json.dumps(
-                    {
-                        "description": "Existing hooks",
-                        "hooks": {
-                            "PreToolUse": [
-                                {
-                                    "matcher": "Bash",
-                                    "hooks": [
-                                        {
-                                            "type": "command",
-                                            "command": "python3 existing_hook.py",
-                                        }
-                                    ],
-                                }
-                            ],
-                            "SubagentStart": [
-                                {
-                                    "matcher": "worker",
-                                    "hooks": [
-                                        {
-                                            "type": "command",
-                                            "command": "python3 existing_subagent_hook.py",
-                                        }
-                                    ],
-                                }
-                            ],
-                        },
-                    }
-                )
-                + "\n",
-                encoding="utf-8",
-            )
-
-            installer.install(REPO_ROOT, codex_home, global_agents)
-
-            parsed_config = tomllib.loads(config.read_text(encoding="utf-8"))
-            self.assertEqual(config.stat().st_mode & 0o777, 0o600)
-            self.assertEqual(parsed_config["model"], "session-selected-model")
-            self.assertEqual(parsed_config["model_reasoning_effort"], "high")
-            self.assertTrue(parsed_config["agents"]["enabled"])
-            self.assertFalse(parsed_config["agents"]["interrupt_message"])
-            self.assertNotIn("max_concurrent_threads_per_session", parsed_config["agents"])
-            self.assertNotIn("max_threads", parsed_config["agents"])
-            self.assertNotIn("default_subagent_model", parsed_config["agents"])
-            self.assertNotIn("default_subagent_reasoning_effort", parsed_config["agents"])
-
-            expected_roles = {"default": (None, None)}
-            for family, efforts in {
-                "luna": ("medium", "high", "xhigh", "max"),
-                "terra": ("low", "medium", "high", "xhigh", "max", "ultra"),
-                "sol": ("low", "medium", "high", "xhigh", "max", "ultra"),
-            }.items():
-                expected_roles.update(
-                    {
-                        f"{family}-{effort}": (f"gpt-5.6-{family}", effort)
-                        for effort in efforts
-                    }
-                )
-            for role, expected in expected_roles.items():
-                role_file = codex_home / "agents" / f"{role}.toml"
-                self.assertTrue(role_file.is_file(), role)
-                role_config = tomllib.loads(role_file.read_text(encoding="utf-8"))
-                self.assertEqual(role_config.get("model"), expected[0], role)
-                self.assertEqual(role_config.get("model_reasoning_effort"), expected[1], role)
-
-            for role in RETIRED_ROLES:
-                retired_path = target_agents / f"{role}.toml"
-                self.assertFalse(retired_path.exists(), role)
-                backups = list(
-                    (codex_home / "subagent-router-backups").glob(
-                        f"*/agents/{role}.toml"
-                    )
-                )
-                self.assertEqual(len(backups), 1, role)
-                self.assertIn('marker = "retired"', backups[0].read_text(encoding="utf-8"))
-
-            installed_guidance = global_agents.read_text(encoding="utf-8")
-            self.assertIn("Keep this line.", installed_guidance)
-            self.assertIn("decides how many children to run", installed_guidance)
-            self.assertNotIn("no more than three", installed_guidance.lower())
-            self.assertNotIn("never exceed six children", installed_guidance.lower())
-            self.assertEqual(installed_guidance.count(installer.BLOCK_START), 1)
-            self.assertEqual(installed_guidance.count(installer.BLOCK_END), 1)
-
-            installed_hooks = json.loads(hooks_path.read_text(encoding="utf-8"))
-            self.assertEqual(installed_hooks["description"], "Existing hooks")
-            self.assertEqual(len(installed_hooks["hooks"]["PreToolUse"]), 1)
-            subagent_groups = installed_hooks["hooks"]["SubagentStart"]
-            self.assertEqual(len(subagent_groups), 2)
-            managed_commands = [
-                handler["command"]
-                for group in subagent_groups
-                for handler in group["hooks"]
-                if "codex_subagent_router_disclosure.py" in handler["command"]
-            ]
-            self.assertEqual(len(managed_commands), 1)
-
-            verifier = load_module("router_verify_install", REPO_ROOT / "scripts" / "verify.py")
-            policy_path = REPO_ROOT / "policy" / "subagent-routing.md"
+            self.assertIn("Router source and installed configuration verified", result.stdout)
             self.assertEqual(
-                verifier.verify_install(codex_home, global_agents, policy_path), []
+                {path.stem for path in (codex_home / "agents").glob("*.toml")},
+                set(EXPECTED_ROLES),
             )
-            stale_role = target_agents / f"{RETIRED_ROLES[0]}.toml"
-            stale_role.write_text('name = "retired"\n', encoding="utf-8")
-            self.assertIn(
-                f"agent:{RETIRED_ROLES[0]}:retired",
-                verifier.verify_install(codex_home, global_agents, policy_path),
-            )
-            stale_role.unlink()
-            stale_guidance = installed_guidance.replace(
-                "The parent agent decides how many children to run",
-                "The parent agent runs no more than three children",
-            )
-            global_agents.write_text(stale_guidance, encoding="utf-8")
-            verification_errors = verifier.verify_install(
-                codex_home, global_agents, policy_path
-            )
-            self.assertIn("guidance:managed-block-content", verification_errors)
-            for fixed_preference in (
-                "Use up to four children for normal work.",
-                "Use a maximum of 4 subagents.",
-                "Limit parallel agents to 3.",
-                "Prefer two children for routine tasks.",
-            ):
-                global_agents.write_text(
-                    fixed_preference + "\n" + installed_guidance,
-                    encoding="utf-8",
-                )
-                preference_errors = verifier.verify_install(
-                    codex_home, global_agents, policy_path
-                )
-                self.assertIn(
-                    "guidance:fixed-concurrency-cap",
-                    preference_errors,
-                    fixed_preference,
-                )
-            global_agents.write_text(installed_guidance, encoding="utf-8")
+            self.assertFalse((codex_home / "hooks.json").exists())
+            self.assertFalse((codex_home / "hooks").exists())
+            config = tomllib.loads((codex_home / "config.toml").read_text(encoding="utf-8"))
+            self.assertTrue(config["agents"]["enabled"])
+            self.assertNotIn("features", config)
 
-            first_config = config.read_text(encoding="utf-8")
-            first_guidance = installed_guidance
-            first_hooks = hooks_path.read_text(encoding="utf-8")
-            installer.install(REPO_ROOT, codex_home, global_agents)
-            self.assertEqual(config.read_text(encoding="utf-8"), first_config)
-            self.assertEqual(global_agents.read_text(encoding="utf-8"), first_guidance)
-            self.assertEqual(hooks_path.read_text(encoding="utf-8"), first_hooks)
-
-    def test_subagent_start_hook_discloses_runtime_model_and_reasoning(self):
-        installer = load_module("router_install_hook", REPO_ROOT / "scripts" / "install.py")
-
+    def test_install_preserves_primary_permissions_mcp_limits_and_existing_hooks(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             codex_home = Path(temp_dir) / ".codex"
-            global_agents = codex_home / "AGENTS.md"
-            installer.install(REPO_ROOT, codex_home, global_agents)
-            hook = codex_home / "hooks" / "codex_subagent_router_disclosure.py"
-
-            cases = (
-                (
-                    {"hook_event_name": "SubagentStart", "agent_type": "sol-xhigh", "model": "runtime-model"},
-                    "Subagent started | role: sol-xhigh | model: runtime-model | reasoning: xhigh",
-                ),
-                (
-                    {"hook_event_name": "SubagentStart", "agent_type": "terra-ultra", "model": "runtime-model"},
-                    "Subagent started | role: terra-ultra | model: runtime-model | reasoning: ultra",
-                ),
-                (
-                    {"hook_event_name": "SubagentStart", "agent_type": "default", "model": "parent-model"},
-                    "Subagent started | role: default | model: parent-model | reasoning: inherited from parent",
-                ),
-                (
-                    {"hook_event_name": "SubagentStart", "agent_type": "worker", "model": "runtime-model"},
-                    "Subagent started | role: worker | model: runtime-model | reasoning: runtime-selected (not exposed by SubagentStart)",
-                ),
+            codex_home.mkdir()
+            config_path = codex_home / "config.toml"
+            initial = (
+                'model = "gpt-6-astra"\nmodel_reasoning_effort = "ultra"\n'
+                'sandbox_mode = "workspace-write"\napproval_policy = "on-request"\n'
+                '[agents]\nenabled = false\nmax_concurrent_threads_per_session = 3\n'
+                'max_threads = 2\ninterrupt_message = false\n'
+                'default_subagent_model = "old-model"\n'
+                'default_subagent_reasoning_effort = "low"\n'
+                '[features]\n# Keep feature choices.\nhooks = false\nweb_search = true\n'
+                '[sandbox_workspace_write]\nnetwork_access = false\n'
+                '[mcp_servers.example]\ncommand = "example-server"\nargs = ["--stdio"]\n'
             )
-            for payload, expected in cases:
-                with self.subTest(role=payload["agent_type"]):
-                    result = subprocess.run(
-                        ["python3", str(hook)],
-                        input=json.dumps(payload),
-                        check=False,
-                        capture_output=True,
-                        text=True,
-                    )
-                    self.assertEqual(result.returncode, 0, result.stderr)
-                    output = json.loads(result.stdout)
-                    self.assertEqual(output["systemMessage"], expected)
+            config_path.write_text(initial, encoding="utf-8")
+            config_path.chmod(0o600)
+            old_config = tomllib.loads(initial)
+            hooks_path = codex_home / "hooks.json"
+            hooks_content = '{"hooks": {"SubagentStart": []}, "description": "Existing hooks"}\n'
+            hooks_path.write_text(hooks_content, encoding="utf-8")
+            old_hook = codex_home / "hooks" / "existing_hook.py"
+            old_hook.parent.mkdir()
+            old_hook.write_text("# Existing hook definition\n", encoding="utf-8")
+            guidance_path = codex_home / "AGENTS.md"
+            guidance_path.write_text("# Existing guidance\n\nKeep this line.\n", encoding="utf-8")
+            unrelated_role = codex_home / "agents" / "custom.toml"
+            unrelated_role.parent.mkdir()
+            unrelated_role.write_text('name = "custom"\n', encoding="utf-8")
 
-    def test_quoted_and_dotted_concurrency_keys_are_removed(self):
-        installer = load_module("router_install_key_forms", REPO_ROOT / "scripts" / "install.py")
+            self.installer.install(REPO_ROOT, codex_home, guidance_path)
+            installed_config = config_path.read_text(encoding="utf-8")
+            parsed = tomllib.loads(installed_config)
+            self.assertIn("[features]\n# Keep feature choices.\nhooks = false\nweb_search = true\n", installed_config)
+            expected = tomllib.loads(initial)
+            expected["agents"]["enabled"] = True
+            del expected["agents"]["default_subagent_model"]
+            del expected["agents"]["default_subagent_reasoning_effort"]
+            self.assertEqual(parsed, expected)
+            self.assertEqual(parsed["model"], old_config["model"])
+            self.assertEqual(parsed["model_reasoning_effort"], old_config["model_reasoning_effort"])
+            self.assertEqual(config_path.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(hooks_path.read_text(encoding="utf-8"), hooks_content)
+            self.assertEqual(old_hook.read_text(encoding="utf-8"), "# Existing hook definition\n")
+            self.assertEqual(unrelated_role.read_text(encoding="utf-8"), 'name = "custom"\n')
+            installed_guidance = guidance_path.read_text(encoding="utf-8")
+            self.assertIn("Keep this line.", installed_guidance)
+            self.assertEqual(installed_guidance.count(self.installer.BLOCK_START), 1)
+            self.assertEqual(installed_guidance.count(self.installer.BLOCK_END), 1)
+            self.assertEqual(self.verifier.verify_install(codex_home, guidance_path, self.policy_path), [])
+            first = profile_snapshot(codex_home)
+            self.assertEqual(self.installer.install(REPO_ROOT, codex_home, guidance_path), [])
+            self.assertEqual(profile_snapshot(codex_home), first)
+
+    def test_migration_backs_up_retired_and_replaced_roles(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            target_agents = codex_home / "agents"
+            target_agents.mkdir(parents=True)
+            original_roles = {}
+            for role in RETIRED_ROLES + tuple(EXPECTED_ROLES):
+                original = f'name = "{role}"\nmarker = "previous-definition"\n'
+                (target_agents / f"{role}.toml").write_text(original, encoding="utf-8")
+                original_roles[role] = original
+            guidance = codex_home / "AGENTS.md"
+            self.installer.install(REPO_ROOT, codex_home, guidance)
+            for role, original in original_roles.items():
+                with self.subTest(role=role):
+                    backups = list((codex_home / "subagent-router-backups").glob(f"*/agents/{role}.toml"))
+                    self.assertEqual(len(backups), 1)
+                    self.assertEqual(backups[0].read_text(encoding="utf-8"), original)
+                    target = target_agents / f"{role}.toml"
+                    if role in RETIRED_ROLES:
+                        self.assertFalse(target.exists())
+                    else:
+                        parsed = tomllib.loads(target.read_text(encoding="utf-8"))
+                        model, effort, sandbox = EXPECTED_ROLES[role]
+                        self.assertEqual(parsed["model"], model)
+                        self.assertEqual(parsed["model_reasoning_effort"], effort)
+                        self.assertEqual(parsed.get("sandbox_mode"), sandbox)
+            self.assertEqual(self.verifier.verify_install(codex_home, guidance, self.policy_path), [])
+
+    def test_quoted_and_dotted_limits_survive_default_removal(self):
         cases = {
             "quoted": (
-                '[agents]\n'
-                '"max_concurrent_threads_per_session" = 5\n'
+                '["agents"]\n"max_concurrent_threads_per_session" = 5\n'
                 "'max_threads' = 4\n"
+                '"default_subagent_model" = "old-model"\n'
+                "'default_subagent_reasoning_effort' = 'low'\n"
                 'interrupt_message = false\n'
             ),
             "dotted": (
-                'model = "session-selected-model"\n'
+                'model = "gpt-6-astra"\n'
                 'agents.max_concurrent_threads_per_session = 5\n'
                 'agents.max_threads = 4\n'
+                'agents.default_subagent_model = "old-model"\n'
+                'agents.default_subagent_reasoning_effort = "low"\n'
             ),
         }
-
-        for name, initial_config in cases.items():
+        for name, initial in cases.items():
             with self.subTest(name=name), tempfile.TemporaryDirectory() as temp_dir:
+                codex_home = Path(temp_dir) / ".codex"
+                codex_home.mkdir()
+                config_path = codex_home / "config.toml"
+                config_path.write_text(initial, encoding="utf-8")
+                self.installer.install(REPO_ROOT, codex_home, codex_home / "AGENTS.md")
+                parsed = tomllib.loads(config_path.read_text(encoding="utf-8"))
+                expected = tomllib.loads(initial)
+                expected["agents"]["enabled"] = True
+                del expected["agents"]["default_subagent_model"]
+                del expected["agents"]["default_subagent_reasoning_effort"]
+                self.assertEqual(parsed, expected)
+
+    def test_invalid_inputs_are_rejected_before_any_profile_change(self):
+        cases = ("config", "guidance", "missing-role", "malformed-role", "wrong-role")
+        for case in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temp_dir:
                 root = Path(temp_dir)
+                source = root / "source"
+                for directory in ("agents", "policy"):
+                    shutil.copytree(REPO_ROOT / directory, source / directory)
                 codex_home = root / ".codex"
                 codex_home.mkdir()
                 config = codex_home / "config.toml"
-                config.write_text(initial_config, encoding="utf-8")
-                global_agents = codex_home / "AGENTS.md"
-                installer.install(REPO_ROOT, codex_home, global_agents)
-                parsed = tomllib.loads(config.read_text(encoding="utf-8"))
-                self.assertTrue(parsed["agents"]["enabled"])
-                self.assertNotIn("max_concurrent_threads_per_session", parsed["agents"])
-                self.assertNotIn("max_threads", parsed["agents"])
+                config.write_text('model = "gpt-6-astra"\n', encoding="utf-8")
+                guidance = codex_home / "AGENTS.md"
+                guidance.write_text("Keep this line.\n", encoding="utf-8")
+                old_role = codex_home / "agents" / "owner.toml"
+                old_role.parent.mkdir()
+                old_role.write_text('name = "owner"\n', encoding="utf-8")
+                candidate = source / "agents" / "sol-high.toml"
+                if case == "config":
+                    config.write_text('model = [\n', encoding="utf-8")
+                elif case == "guidance":
+                    guidance.write_text(self.installer.BLOCK_START + "\n", encoding="utf-8")
+                elif case == "missing-role":
+                    candidate.unlink()
+                elif case == "malformed-role":
+                    candidate.write_text('model = [\n', encoding="utf-8")
+                elif case == "wrong-role":
+                    candidate.write_text(candidate.read_text(encoding="utf-8").replace(
+                        'model = "gpt-6.1-sol"', 'model = "wrong-model"'
+                    ), encoding="utf-8")
+                before = profile_snapshot(codex_home)
+                with self.assertRaises((ValueError, OSError)):
+                    self.installer.install(source, codex_home, guidance)
+                self.assertEqual(profile_snapshot(codex_home), before)
 
-    def test_existing_features_table_forms_are_updated_without_duplication(self):
-        installer = load_module("router_install_feature_forms", REPO_ROOT / "scripts" / "install.py")
-        cases = {
-            "quoted-table": '["features"]\nhooks = false\nweb_search = true\n',
-            "inline-table": 'features = { hooks = false, web_search = true }\n',
-            "dotted-table": 'features.web_search = true\n',
-        }
-
-        for name, initial_config in cases.items():
-            with self.subTest(name=name):
-                updated = installer.update_hooks_feature_config(initial_config)
-                parsed = tomllib.loads(updated)
-                self.assertTrue(parsed["features"]["hooks"])
-                self.assertTrue(parsed["features"]["web_search"])
-
-        inline_with_comma = 'features = { hooks = false, label = "a,b" }\n'
-        updated_inline = installer.update_hooks_feature_config(inline_with_comma)
-        self.assertIn('label = "a,b"', updated_inline)
-
-        nested_dotted = '[other]\nfeatures.hooks = false\n'
-        updated_nested = installer.update_hooks_feature_config(nested_dotted)
-        parsed_nested = tomllib.loads(updated_nested)
-        self.assertTrue(parsed_nested["features"]["hooks"])
-        self.assertFalse(parsed_nested["other"]["features"]["hooks"])
-
-    def test_hook_update_does_not_remove_an_unrelated_same_named_script(self):
-        installer = load_module("router_install_hook_identity", REPO_ROOT / "scripts" / "install.py")
-        unrelated_command = "python3 /other/codex_subagent_router_disclosure.py"
-        existing = json.dumps(
-            {
-                "hooks": {
-                    "SubagentStart": [
-                        {
-                            "matcher": "worker",
-                            "hooks": [
-                                {
-                                    "type": "command",
-                                    "command": unrelated_command,
-                                },
-                                {
-                                    "type": "command",
-                                    "command": "python3 /managed/hooks/codex_subagent_router_disclosure.py",
-                                    "timeout": 5,
-                                    "statusMessage": "Showing subagent model and reasoning",
-                                }
-                            ],
-                        }
-                    ]
-                }
-            }
-        )
-        managed_command = "python3 /managed/hooks/codex_subagent_router_disclosure.py"
-
-        updated = json.loads(installer.update_hooks_config(existing, managed_command))
-        commands = [
-            handler["command"]
-            for group in updated["hooks"]["SubagentStart"]
-            for handler in group["hooks"]
-        ]
-        self.assertIn(unrelated_command, commands)
-        self.assertIn(managed_command, commands)
-        worker_group = updated["hooks"]["SubagentStart"][0]
-        self.assertEqual(worker_group["matcher"], "worker")
-        self.assertEqual(len(worker_group["hooks"]), 2)
-
-    def test_verifier_rejects_corrupted_managed_hook_registration(self):
-        installer = load_module("router_install_hook_verifier", REPO_ROOT / "scripts" / "install.py")
-        verifier = load_module("router_verify_hook_registration", REPO_ROOT / "scripts" / "verify.py")
-
+    def test_verifier_rejects_retired_roles_and_stale_policy(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             codex_home = Path(temp_dir) / ".codex"
-            global_agents = codex_home / "AGENTS.md"
-            installer.install(REPO_ROOT, codex_home, global_agents)
-            hooks_path = codex_home / "hooks.json"
-            original = json.loads(hooks_path.read_text(encoding="utf-8"))
-            policy_path = REPO_ROOT / "policy" / "subagent-routing.md"
+            guidance = codex_home / "AGENTS.md"
+            self.installer.install(REPO_ROOT, codex_home, guidance)
+            stale_role = codex_home / "agents" / "owner.toml"
+            stale_role.write_text('name = "owner"\n', encoding="utf-8")
+            self.assertIn("agent:owner:retired", self.verifier.verify_install(codex_home, guidance, self.policy_path))
+            stale_role.unlink()
+            original = guidance.read_text(encoding="utf-8")
+            guidance.write_text(original.replace(self.installer.BLOCK_START,
+                self.installer.BLOCK_START + "\nStale policy."), encoding="utf-8")
+            self.assertIn("guidance:managed-block-content", self.verifier.verify_install(codex_home, guidance, self.policy_path))
 
-            mutations = {
-                "matcher": lambda handler, group: group.update(matcher="worker"),
-                "type": lambda handler, group: handler.update(type="prompt"),
-                "path": lambda handler, group: handler.update(
-                    command="python3 /wrong/codex_subagent_router_disclosure.py"
-                ),
-                "executable": lambda handler, group: handler.update(
-                    command=handler["command"].replace(
-                        handler["command"].split()[0], "/bin/false", 1
-                    )
-                ),
-                "timeout": lambda handler, group: handler.update(timeout=0),
+    def test_first_role_write_failure_restores_profile_and_keeps_backups(self):
+        for existing_agents in (False, True):
+            for write_before_failure in (False, True):
+                with self.subTest(existing_agents=existing_agents, write_before_failure=write_before_failure), tempfile.TemporaryDirectory() as temp_dir:
+                    codex_home = Path(temp_dir) / ".codex"
+                    codex_home.mkdir()
+                    config = codex_home / "config.toml"
+                    config.write_text('model = "gpt-6-astra"\nmodel_reasoning_effort = "ultra"\n', encoding="utf-8")
+                    config.chmod(0o640)
+                    guidance = codex_home / "AGENTS.md"
+                    guidance.write_text("Keep existing guidance.\n", encoding="utf-8")
+                    guidance.chmod(0o600)
+                    if existing_agents:
+                        agents = codex_home / "agents"
+                        agents.mkdir()
+                        (agents / "sol-high.toml").write_text('name = "previous-sol-high"\n', encoding="utf-8")
+                        (agents / "sol-high.toml").chmod(0o600)
+                        (agents / "owner.toml").write_text('name = "owner"\n', encoding="utf-8")
+                        (agents / "owner.toml").chmod(0o644)
+                    before = profile_snapshot(codex_home)
+                    original_write = self.installer._atomic_write
+                    attempted = []
+
+                    def fail_first_role(path, content):
+                        attempted.append(path.name)
+                        if path.name == "sol-low.toml":
+                            if write_before_failure:
+                                original_write(path, content)
+                            raise OSError("Simulated role write failure")
+                        original_write(path, content)
+
+                    with mock.patch.object(self.installer, "_atomic_write", side_effect=fail_first_role):
+                        with self.assertRaisesRegex(OSError, "Simulated role write failure"):
+                            self.installer.install(REPO_ROOT, codex_home, guidance)
+                    self.assertEqual(attempted, ["config.toml", "AGENTS.md", "sol-low.toml"])
+                    after = {
+                        name: value for name, value in profile_snapshot(codex_home).items()
+                        if name.split("/")[0] != "subagent-router-backups"
+                    }
+                    self.assertEqual(after, before)
+                    for role in EXPECTED_ROLES:
+                        if not (existing_agents and role == "sol-high"):
+                            self.assertFalse((codex_home / "agents" / f"{role}.toml").exists())
+                    backup_dirs = list((codex_home / "subagent-router-backups").iterdir())
+                    self.assertEqual(len(backup_dirs), 1)
+                    self.assertEqual(profile_snapshot(backup_dirs[0]), before)
+
+    def test_last_role_write_failure_restores_read_only_config_and_guidance(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            codex_home.mkdir()
+            config = codex_home / "config.toml"
+            config.write_text('model = "gpt-6-astra"\nmodel_reasoning_effort = "ultra"\n', encoding="utf-8")
+            guidance = codex_home / "AGENTS.md"
+            guidance.write_text("Keep existing guidance.\n", encoding="utf-8")
+            config.chmod(0o444)
+            guidance.chmod(0o444)
+            before = profile_snapshot(codex_home)
+            original_write = self.installer._atomic_write
+
+            def fail_after_last_role(path, content):
+                original_write(path, content)
+                if path.name == "astra-reviewer.toml":
+                    raise OSError("Simulated last role write failure")
+
+            with mock.patch.object(self.installer, "_atomic_write", side_effect=fail_after_last_role):
+                with self.assertRaisesRegex(OSError, "Simulated last role write failure"):
+                    self.installer.install(REPO_ROOT, codex_home, guidance)
+            after = {
+                name: value for name, value in profile_snapshot(codex_home).items()
+                if name.split("/")[0] != "subagent-router-backups"
             }
-            for name, mutate in mutations.items():
-                with self.subTest(name=name):
-                    candidate = json.loads(json.dumps(original))
-                    group = candidate["hooks"]["SubagentStart"][-1]
-                    handler = group["hooks"][0]
-                    mutate(handler, group)
-                    hooks_path.write_text(
-                        json.dumps(candidate) + "\n", encoding="utf-8"
-                    )
-                    errors = verifier.verify_install(
-                        codex_home, global_agents, policy_path
-                    )
-                    self.assertIn("hooks-config:managed-handler", errors)
+            self.assertEqual(after, before)
+            self.assertFalse((codex_home / "agents").exists())
+            backup_dirs = list((codex_home / "subagent-router-backups").iterdir())
+            self.assertEqual(len(backup_dirs), 1)
+            self.assertEqual(profile_snapshot(backup_dirs[0]), before)
+
+    def test_failed_first_restore_still_restores_guidance_and_cleans_roles(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            codex_home.mkdir()
+            config = codex_home / "config.toml"
+            original_config = 'model = "gpt-6-astra"\nmodel_reasoning_effort = "ultra"\n'
+            config.write_text(original_config, encoding="utf-8")
+            config.chmod(0o640)
+            guidance = codex_home / "AGENTS.md"
+            original_guidance = "Keep existing guidance.\n"
+            guidance.write_text(original_guidance, encoding="utf-8")
+            guidance.chmod(0o444)
+            original_write = self.installer._atomic_write
+            original_restore = self.installer._restore_backup
+            restores = []
+
+            def fail_after_last_role(path, content):
+                original_write(path, content)
+                if path.name == "astra-reviewer.toml":
+                    raise OSError("Simulated last role write failure")
+
+            def fail_first_restore(source, destination):
+                restores.append(destination.name)
+                if len(restores) == 1:
+                    raise OSError("Simulated first restore failure")
+                original_restore(source, destination)
+
+            with mock.patch.object(self.installer, "_atomic_write", side_effect=fail_after_last_role), mock.patch.object(self.installer, "_restore_backup", side_effect=fail_first_restore):
+                with self.assertRaises(RuntimeError) as raised:
+                    self.installer.install(REPO_ROOT, codex_home, guidance)
+            self.assertEqual(restores, ["config.toml", "AGENTS.md"])
+            self.assertEqual(guidance.read_text(encoding="utf-8"), original_guidance)
+            self.assertEqual(guidance.stat().st_mode & 0o777, 0o444)
+            self.assertFalse((codex_home / "agents").exists())
+            self.assertNotEqual(config.read_text(encoding="utf-8"), original_config)
+            backup_dirs = list((codex_home / "subagent-router-backups").iterdir())
+            self.assertEqual(len(backup_dirs), 1)
+            backup_config = backup_dirs[0] / "config.toml"
+            self.assertEqual(backup_config.read_text(encoding="utf-8"), original_config)
+            self.assertEqual(backup_config.stat().st_mode & 0o777, 0o640)
+            self.assertIn("incomplete recovery", str(raised.exception))
+            self.assertIn("config.toml", str(raised.exception))
+            self.assertIn(str(backup_dirs[0]), str(raised.exception))
+            self.assertIsInstance(raised.exception.__cause__, OSError)
+
+    def test_regular_file_at_agents_directory_rejects_before_profile_changes(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            codex_home.mkdir()
+            (codex_home / "config.toml").write_text('model = "gpt-6-astra"\n', encoding="utf-8")
+            guidance = codex_home / "AGENTS.md"
+            guidance.write_text("Keep existing guidance.\n", encoding="utf-8")
+            (codex_home / "agents").write_text("This is a file.\n", encoding="utf-8")
+            before = profile_snapshot(codex_home)
+            with self.assertRaises((OSError, ValueError)):
+                self.installer.install(REPO_ROOT, codex_home, guidance)
+            self.assertEqual(profile_snapshot(codex_home), before)
+
+    def test_managed_config_and_role_symlinks_preserve_link_and_target(self):
+        for destination in ("config.toml", "agents/sol-low.toml"):
+            with self.subTest(destination=destination), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                codex_home = root / ".codex"
+                codex_home.mkdir()
+                target = root / "external.toml"
+                target.write_text('model = "gpt-6-astra"\n', encoding="utf-8")
+                target.chmod(0o640)
+                link = codex_home / destination
+                link.parent.mkdir(parents=True, exist_ok=True)
+                link.symlink_to(target)
+                before = profile_snapshot(codex_home)
+                target_before = (target.read_bytes(), target.stat().st_mode & 0o777)
+                link_before = link.readlink()
+                with self.assertRaisesRegex(ValueError, "symbolic link"):
+                    self.installer.install(REPO_ROOT, codex_home, codex_home / "AGENTS.md")
+                self.assertTrue(link.is_symlink())
+                self.assertEqual(link.readlink(), link_before)
+                self.assertEqual((target.read_bytes(), target.stat().st_mode & 0o777), target_before)
+                self.assertEqual(profile_snapshot(codex_home), before)
+
+    def test_agents_config_without_trailing_newline_installs(self):
+        for initial in ('[agents]', '[agents]\nmax_threads = 3'):
+            with self.subTest(initial=initial), tempfile.TemporaryDirectory() as temp_dir:
+                codex_home = Path(temp_dir) / ".codex"
+                codex_home.mkdir()
+                config = codex_home / "config.toml"
+                config.write_text(initial, encoding="utf-8")
+                guidance = codex_home / "AGENTS.md"
+                self.installer.install(REPO_ROOT, codex_home, guidance)
+                expected = tomllib.loads(initial)
+                expected["agents"]["enabled"] = True
+                self.assertEqual(tomllib.loads(config.read_text(encoding="utf-8")), expected)
+                self.assertEqual(self.verifier.verify_install(codex_home, guidance, self.policy_path), [])
+
+    def test_inline_agents_table_rejects_without_profile_changes(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            codex_home.mkdir()
+            config = codex_home / "config.toml"
+            config.write_text('model = "gpt-6-astra"\nagents = { enabled = false, max_threads = 3 }\n', encoding="utf-8")
+            guidance = codex_home / "AGENTS.md"
+            guidance.write_text("Keep existing guidance.\n", encoding="utf-8")
+            before = profile_snapshot(codex_home)
+            with self.assertRaisesRegex(ValueError, "Inline agents table"):
+                self.installer.install(REPO_ROOT, codex_home, guidance)
+            self.assertEqual(profile_snapshot(codex_home), before)
 
     def test_shareable_tree_contains_no_machine_or_company_identifiers(self):
-        verifier = load_module("router_verify", REPO_ROOT / "scripts" / "verify.py")
-        self.assertEqual(verifier.scan_shareable_tree(REPO_ROOT), [])
+        self.assertEqual(self.verifier.scan_shareable_tree(REPO_ROOT), [])
 
 
 if __name__ == "__main__":

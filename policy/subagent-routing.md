@@ -1,281 +1,51 @@
-## Automatic subagent model routing
+## Model and effort routing
 
-Apply this policy whenever subagents are available. Split the task into ready
-workstreams before deciding whether to delegate or work directly.
+Preserve the human-selected primary model and reasoning effort, including Ultra.
+Do not change primary defaults or introduce a global subagent model/effort default.
+The primary owns requirements, overall design, integration, evidence-based review
+adjudication, verification, and the final completion claim. Short, connected, or
+unclassified work stays in the primary session.
 
-### Visible launch disclosure
-
-- A user-level `SubagentStart` hook reports every child launch in the Codex App
-  UI or CLI event stream as `role`, runtime `model`, and reasoning effort.
-- For named router roles, reasoning comes from the installed role configuration.
-  For `default`, report that reasoning is inherited from the parent rather than
-  guessing a value the runtime event does not expose.
-- For built-in or unknown roles without a configured effort, state that reasoning
-  was runtime-selected and is not exposed by `SubagentStart`. Never invent it.
-- Reinstalling or updating the hook requires the user to review and trust its
-  current definition once through Codex's hook trust flow.
-
-### App-visible task-name labels
-
-Every spawn must set `task_name` to `<route_tag>_<short_purpose>`. The route tag
-must be the first component so the Codex App's Subagents list exposes the selected
-model tier and reasoning effort directly in each task title. Keep the purpose
-short and use only lowercase letters, digits, and underscores.
-
-Derive the route tag from the child's effective model and reasoning effort after
-normal Codex configuration precedence is resolved. Never derive the tag from the role name.
-A role may help select a configuration, but two roles that resolve to the same
-model and effort must receive the same tag.
-
-- `gpt-5.6-luna` + `low` -> `gpt56_luna_low`
-- `gpt-5.6-luna` + `medium` -> `gpt56_luna_medium`
-- `gpt-5.6-luna` + `high` -> `gpt56_luna_high`
-- `gpt-5.6-luna` + `xhigh` -> `gpt56_luna_xhigh`
-- `gpt-5.6-luna` + `max` -> `gpt56_luna_max`
-- `gpt-5.6-terra` + `low` -> `gpt56_terra_low`
-- `gpt-5.6-terra` + `medium` -> `gpt56_terra_medium`
-- `gpt-5.6-terra` + `high` -> `gpt56_terra_high`
-- `gpt-5.6-terra` + `xhigh` -> `gpt56_terra_xhigh`
-- `gpt-5.6-terra` + `max` -> `gpt56_terra_max`
-- `gpt-5.6-terra` + `ultra` -> `gpt56_terra_ultra`
-- `gpt-5.6-sol` + `low` -> `gpt56_sol_low`
-- `gpt-5.6-sol` + `medium` -> `gpt56_sol_medium`
-- `gpt-5.6-sol` + `high` -> `gpt56_sol_high`
-- `gpt-5.6-sol` + `xhigh` -> `gpt56_sol_xhigh`
-- `gpt-5.6-sol` + `max` -> `gpt56_sol_max`
-- `gpt-5.6-sol` + `ultra` -> `gpt56_sol_ultra`
-- effective model or effort not available before spawn -> `runtime_selected`
-
-For example, a Luna Max task uses `gpt56_luna_max_analyze_rules`, encoding the
-human-readable label `GPT56 · luna · max` within the identifier-safe task name.
-An XHigh review uses `gpt56_sol_xhigh_review_installer`. Apply the prefix to every
-child, including parallel children, retries, and escalations. Current Codex runtime
-metadata exposes `low`, `medium`, `high`, `xhigh`, and `max` for all three families,
-plus `ultra` for Sol and Terra. `ultra` is an automatic task delegation mode, not
-reasoning depth above `max`; Luna has no `ultra` route.
-The Luna low tag remains for truthful observation when `default` inherits a
-manually selected low-effort Luna session; no named low-effort Luna role is exposed.
-For `default`, use the current parent model and effort only when both effective
-values are explicitly available before spawn. Otherwise use `runtime_selected`
-instead of guessing inherited values. The title prefix communicates the resolved
-pre-spawn selection; the
-`SubagentStart` hook remains the source for the runtime model actually used.
-
-### Default inheritance
-
-- `default` is the ordinary delegation role.
-- `default` must inherit the current parent session's manually selected model and
-  reasoning effort.
-- Do not set a model or reasoning override for `default`.
-- Use `default` only when the routing receipt establishes an affirmative same-tier match:
-  the remaining assignment genuinely needs the parent's effective capability and
-  no canonical family-effort role is a better fit.
-- The absence of an obvious specialist is not evidence for `default`. State why a
-  cheaper role would be unsafe and why a stronger role would add no material value.
-- Do not silently upgrade or downgrade `default`; choose a canonical named role
-  when a different family or effort is justified.
-- `default` is not a fallback for work that exceeds the capability of the
-  parent session's selected model. Route that work to the appropriate named Sol
-  specialist.
-
-### Canonical model and effort roles
-
-Choose the model family from the work mode and decision boundary, then choose the
-effort from the remaining complexity. New routes use `{family}-{effort}` names.
-
-- Luna is for closed, cost-sensitive extraction, transformation, classification,
-  formatting, inventory, bounded reasoning, or implementation from an executable
-  design. The result must be independently and mechanically verified.
-  Never route open-ended exploration or final high-risk judgment to Luna.
-- Terra is for read-only codebase exploration, source research, relationship
-  mapping, and evidence synthesis. Terra roles stay read-only. They
-  must not make the final decision for architecture, security, release,
-  migration, or other high-risk work.
-- Sol is for implementation that still requires local judgment, judgment-heavy
-  analysis, review, verification, architecture, and final synthesis, with effort
-  scaled to remaining complexity.
-
-Use effort consistently within the selected family:
-
-- `low`: a narrow single-step task with complete inputs, low risk, and an exact
-  acceptance check. Luna does not expose a named role at this effort.
-- `medium`: routine bounded multi-step work with established patterns.
-- `high`: several explicit constraints or edge cases requiring deeper reasoning.
-- `xhigh`: at least two interacting complexity signals, such as multiple modules,
-  several plausible causes, substantial edge cases, or conflicting evidence.
-- `max`: the hardest single bounded assignment. For Luna, this includes logic-heavy
-  implementation with many explicit or interacting rules and an exact oracle; for
-  Sol, it includes high-risk final judgment, unstable XHigh evidence, or full
-  cross-component solution design.
-- `ultra`: Sol or Terra only, for exceptional work that divides into at least two
-  genuinely independent workstreams. It enables automatic delegation and is not a
-  generic retry tier or a quality rank above `max`.
-
-Luna Medium is the lowest named route. Its closed implementation tiers are:
-
-- Luna Medium: literal, repetitive, or simple mechanical implementation with no
-  materially interacting rules.
-- Luna High: several explicit rules and edge cases within one bounded subsystem.
-- Luna XHigh: interacting explicit rules across several specified files while all
-  decisions and expected results remain closed.
-- Luna Max: the hardest closed, logic-heavy implementation with many interacting
-  branches, states, or rules. It is the primary route for logic-heavy implementation.
-
-### Selection rules
-
-1. Split the task into ready workstreams before deciding whether to delegate.
-   Keep dependent phases serial and identify independent workstreams separately.
-2. When two or more bounded workstreams are ready, can proceed independently before
-   integration, and each requires more than a trivial lookup or edit, the parent
-   must run them in parallel unless dependency order, overlapping writes,
-   authorization constraints, duplicated context, or integration overhead would
-   erase the expected latency or quality benefit. Limit launches by the ready
-   workstreams and safe runtime capacity; never create children merely to satisfy a
-   count.
-3. Delegate one bounded workstream when it provides concrete speed, quality,
-   isolation, or independent-review value. Work directly only when the remaining
-   work is trivial, contains no useful child assignment, or an exception in rule 2
-   applies.
-4. Delegate non-trivial isolated read-only evidence work to Terra by default,
-   including evidence phases split from mixed investigation-and-write tasks. Route
-   downstream writes or high-risk conclusions separately, and keep final synthesis
-   with the parent or an appropriate Sol specialist.
-5. Use Luna only when scope, design inputs, decisions, interfaces, file boundaries,
-   acceptance criteria, prohibited choices, and the mechanical oracle are complete.
-   That closure may be established by the parent during exploration or design and
-   does not need to be present in the original user request. Once complete,
-   delegate non-trivial mechanical implementation to the lowest suitable Luna role
-   by default. Missing or uncertain closure blocks every Luna route.
-6. Use Sol only when local judgment remains, including non-mechanical writes, for
-   judgment-heavy synthesis or verification, or for architecture and final
-   high-risk conclusions. Choose the lowest effort whose explicit conditions are
-   all satisfied.
-7. Use `default` only for an affirmative same-tier match, never merely because no
-   specialist was selected.
-8. Ordinary parent-level parallel delegation may use multiple Luna, Terra, or Sol
-   children and does not require `ultra`. Use `ultra` only when one child must itself
-   orchestrate an exceptional multi-workstream program.
-
-### Routing decision receipt
-
-Every spawn prompt must include a compact routing receipt with these fields:
-
-- `remaining_work`: the child's exact residual deliverable.
-- `delegation_benefit`: the concrete speed, quality, isolation, or review benefit.
-- `phase` and `work_mode`: the current phase and evidence, mechanical, write,
-  judgment, verification, or orchestration mode.
-- `scope_closed` and `design_closed`: whether the child has complete boundaries
-  and decisions for its assignment.
-- `risk`: `low`, `standard`, or `high`.
-- `complexity_signals`: the explicit signals used to choose effort.
-- `independent_workstreams`: the count of genuinely independent workstreams.
-- `same_tier_required`: why inheriting the parent is affirmatively required when
-  `default` is selected; otherwise `false`.
-- `selected_role`, `selected_model`, and `selected_effort`: the resolved route.
-- `rejected_lower_tier` and `rejected_higher_tier`: concise evidence for both
-  neighboring choices.
-- `fallback`: the stop or escalation route if assumptions fail.
-
-The receipt is part of the bounded context package. Never include credentials,
-private values, or unrelated user context in it.
-
-### Conflict precedence
-
-Apply these rules in order when signals overlap:
-
-1. Authorization and single-writer boundaries come before routing.
-2. Split mixed-mode work into sequential assignments when evidence gathering,
-   writing, final judgment, or verification phases depend on each other; split
-   independent phases into separate ready workstreams.
-3. Apply the positive parallel-delegation trigger before considering direct work.
-4. Direct work is allowed only under the trivial-work, no-useful-child, or concrete
-   exception boundaries in the selection rules.
-5. High-risk final decisions require Sol even when Terra or Luna can prepare the
-   evidence.
-6. Choose family before effort; do not compensate for the wrong family by raising
-   effort.
-7. A lower tier requires all downgrade conditions to be positively established.
-8. Any high-risk escalation signal is sufficient to block the cheaper route and
-   select the appropriate stronger Sol route.
-9. Unknown is not evidence for a cheaper route. Preserve the current safe tier or
-   escalate until the uncertainty is resolved.
-10. `default` is last: use it only after proving an affirmative same-tier match.
-
-### Runtime compatibility fallback
-
-- Treat an absent, incomplete, stale, or corrupt runtime model cache as
-  `advisory compatibility evidence`, not as authority to block delegation or the
-  parent task.
-  Report the condition, then try the configured route; the child-start result is
-  the source of truth for what the current runtime accepts.
-- If a Sol or Terra `ultra` route is rejected, make the single fallback attempt in
-  the same family at `max`; the parent retains decomposition and orchestration.
-- If another named route is rejected, an alternate route must stay in the same
-  family and must still satisfy the assignment's risk and acceptance conditions.
-  Never silently cross model families or use `default` to hide incompatibility.
-- Permit at most one alternate child start for the assignment. If it also fails,
-  or no safe same-family alternate exists, the parent executes the assignment
-  directly instead of blocking the user's task or entering a retry loop.
-- Preserve authorization and single-writer boundaries during every fallback, and
-  record the fallback in the routing receipt and visible launch disclosure.
-
-### Re-evaluate at phase and assignment boundaries
-
-- Select the role for the remaining assignment, not the parent agent's model, the
-  original task's peak complexity, or the route used by an earlier phase.
-- Re-evaluate before every spawn and whenever responsibility changes, including
-  `design -> implementation`, `implementation -> verification`,
-  `exploration -> decision`, and a `task split or handoff`.
-- A completed design does not by itself justify a cheaper route. Lower the tier
-  only when the decisions, interfaces, file boundaries, acceptance evidence,
-  prohibited choices, and independent mechanical oracle needed by the child are
-  actually complete. The parent may establish that closure during the task; it
-  need not come from the original user prompt. Once complete, delegate non-trivial
-  literal or repetitive implementation to Luna Medium, explicit multi-rule
-  implementation to Luna High, interacting multi-file implementation to Luna
-  XHigh, and the hardest closed logic-heavy implementation to Luna Max. Bounded
-  implementation that still requires local judgment may use `sol-low`,
-  `sol-medium`, or `sol-high`, while reopened design, interacting unresolved causes,
-  or unstable cross-component decisions justify Sol XHigh or Max.
-- A genuinely new and narrower bounded assignment may select a lower tier than an
-  earlier phase. A retry of the same unresolved assignment follows one-way
-  escalation and must not be relabeled as a new phase merely to reset the tier.
-- Treat verification as its own assignment. Explicit mechanical checks may use a
-  cheaper role, but judgment-heavy or high-risk completion claims require Sol-level
-  synthesis and remain owned by the parent agent.
-- If a child discovers missing design decisions, conflicting evidence, or material
-  scope expansion, it must stop before out-of-scope work. It must then
-  return the evidence and scope change to the parent. The parent re-routes the
-  work while preserving the single-writer boundary.
-
-### Escalation and orchestration
-
-- Within Luna, escalate one direction for the same unresolved assignment:
-  `medium -> high -> xhigh -> max`. Within Terra or Sol, use
-  `low -> medium -> high -> xhigh -> max`.
-- Move Luna work to Sol when its executable design or exact oracle stops being
-  complete, local judgment reopens, risk becomes high, or final ownership crosses
-  the family boundary. Move Terra work to Sol before any write. A closed mechanical
-  code write alone does not force Luna to Sol, but higher Luna or Terra effort is
-  never a substitute for Sol authority outside those boundaries.
-- Ordinary parent-level parallel delegation uses the lowest suitable named role for
-  each workstream and does not require `ultra`. Select Sol or Terra `ultra` only
-  when one child must itself orchestrate an exceptional multi-workstream program;
-  Ultra is not the next retry after `max`.
-- Stop the previous writer before escalating a write task. Never let two agents
-  write the same checkout, branch, or file boundary concurrently.
-- The parent agent owns decomposition, task boundaries, integration, conflict
-  resolution, final verification, and the final completion claim.
-- The parent agent decides how many children to run, whether to run them in
-  parallel or in batches, and when to stop spawning. Base that decision on the
-  number of genuinely independent workstreams, effective runtime capacity,
-  write isolation, expected coordination cost, and verification needs. Do not
-  encode a fixed numeric preference or concurrency cap in this shared policy.
-- Give every child a bounded context package: goal, owned scope, required evidence,
-  constraints, acceptance criteria, current facts, and prohibited actions.
-- Use limited or no history for model-switched children when supported. Copy full
-  history only when the complete decision record is essential.
-- A cheaper run is successful only when the final verified result still meets the
-  acceptance criteria; retries and verifier work count toward total cost.
-- A Luna or Terra result may inform a high-risk decision but may not be the sole
-  basis for the final decision. Require Sol-level synthesis and current evidence.
+- Delegate after defining the goal, input, boundaries, dependencies, and acceptance
+  check, when parallel progress, context isolation, or independent judgment has
+  clear value. A design specialist needs a clear question and constraints, not an
+  already completed design. Do not split merely because a task is long or uses Ultra.
+- For explicitly delegated execution choose `sol-low` for closed, mechanically
+  checkable extraction/conversion; `sol-medium` for ordinary bounded implementation,
+  source investigation, fixed-metric queries, or editing verified facts; `sol-high`
+  for unknown causes, cross-module compatibility, open design, business definitions,
+  or multi-source synthesis; `sol-xhigh` for coupled state machines, concurrency,
+  consistency, migration/recovery, or difficult conflicting evidence.
+- These execution roles use `gpt-6.1-sol` at low/medium/high/xhigh respectively.
+  Reassess remaining work at design/implementation/verification or evidence/judgment
+  transitions. Missing evidence or failing tools require evidence/tool recovery,
+  not guessed facts or blind effort escalation. Max is an evaluated exception;
+  Luna and Terra are not part of the normal routing path.
+- Complex review must start a separate `astra-reviewer` subagent using
+  `gpt-6-astra` with `xhigh`, even when the primary itself uses Astra. Trigger it for
+  explicit review requests, substantive core architecture/shared-protocol changes,
+  consequential safety/permission/consistency/recovery decisions, or important
+  business-definition, cause, or completion judgments with significant consequences.
+  Evidence insufficiency is not an exemption. Effort, Ultra, length, or a domain
+  label alone does not trigger review; routine queries/editing/learning need no heavy review.
+- Give the read-only reviewer original requirements, constraints, an exact version,
+  candidate artifacts, and evidence/verification entry points, not just the primary's
+  conclusions. The primary accepts/rejects findings with evidence or marks them
+  unresolved. After substantive repairs and affected verification, the same reviewer
+  rechecks the new version and affected scope. No substantive findings/changes means
+  no mandatory second review. Later substantive changes invalidate older coverage.
+- Use only supported spawn fields. Explicit model/effort overrides require an
+  independent or finite-history context when the interface rejects full-history
+  overrides. Role files can override spawn parameters; confirm actual settings from
+  runtime evidence when exposed, otherwise report requested/unconfirmed values.
+- Respect effective runtime capacity and user concurrency limits. Parallel writers
+  require disjoint ownership; external writes have one owner. Initialize shared
+  browser/SSO serially before parallel read-only work. Do not automatically nest agents.
+- Return artifacts, verification, evidence references, checked/unchecked scope, tool
+  failures, and remaining gaps. Unknown external effects stay UNKNOWN until reconciled;
+  do not blindly retry. Ordinary dispatch failure may return work to the unchanged
+  primary; required review failure remains pending review. Never treat a child ending,
+  design approval, or passing tests as proof of publication or business acceptance.
+- Preserve existing authorization, permissions, business Gates, and unrelated work.
+  Do not require another confirmation for already authorized reversible work, and
+  do not expand authority through delegation or model selection.

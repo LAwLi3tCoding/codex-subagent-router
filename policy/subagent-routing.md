@@ -12,10 +12,10 @@ unclassified work stays in the primary session.
   Keep short tasks, sequential edits to one module, and work needing frequent exchange
   of intermediate results with one executor. Do not split merely because a task is
   long or uses Ultra. A bounded design question can precede the overall design.
-- For delegated execution use `sol-low` for closed, mechanically checkable work and
-  `sol-medium` for routine implementation, source investigation, and test fixes.
-  Use `sol-high` when unresolved causes, cross-module compatibility, or open design
-  require judgment. Reserve `sol-xhigh` for multiple interacting invariants across
+- For delegated execution use `worker-low` for closed, mechanically checkable work and
+  `worker-medium` for routine implementation, source investigation, and test fixes.
+  Use `worker-high` when unresolved causes, cross-module compatibility, or open design
+  require judgment. Reserve `worker-xhigh` for multiple interacting invariants across
   concurrency, migration, or failure/recovery paths. A state field, many files, task
   length, or domain label alone does not justify high/xhigh. Reassess when uncertainty
   is resolved; do not carry a design effort into routine execution by default.
@@ -29,8 +29,8 @@ unclassified work stays in the primary session.
   to this selection; do not first dispatch an execution role to forward the review.
   Local, reversible changes with clear checks use primary verification unless independent review is requested or
   a mandatory gate applies. Ordinary feature reviews and generic review requests
-  use independent read-only `sol-reviewer` (`gpt-6.1-sol`, `high`).
-  Use independent read-only `astra-reviewer` (`gpt-6-astra`, `xhigh`) for an explicit
+  use independent read-only `reviewer` (`gpt-6.1-sol`, `high`).
+  Use independent read-only `risk-reviewer` (`gpt-6-astra`, `xhigh`) for an explicit
   Astra request or concrete consequential risks in security, permissions, data
   consistency, irreversible operations, critical shared/recovery protocols, or
   high-consequence business-definition, cause, or completion judgments. Identify the

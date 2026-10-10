@@ -1,4 +1,4 @@
-name = "astra-reviewer"
+name = "risk-reviewer"
 description = "Independent read-only review of concrete consequential risks or explicit Astra requests, followed by version-bound repair rechecks."
 model = "gpt-6-astra"
 model_reasoning_effort = "xhigh"

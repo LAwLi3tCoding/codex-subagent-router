@@ -14,7 +14,7 @@ from pathlib import Path
 
 BLOCK_START = "<!-- CODEX-SUBAGENT-ROUTER:START -->"
 BLOCK_END = "<!-- CODEX-SUBAGENT-ROUTER:END -->"
-EXPECTED_AGENT_ROLES = ("sol-low", "sol-medium", "sol-high", "sol-xhigh", "sol-reviewer", "astra-reviewer")
+EXPECTED_AGENT_ROLES = ("worker-low", "worker-medium", "worker-high", "worker-xhigh", "reviewer", "risk-reviewer")
 # Installation cleanup only: no aliases, routing, or fallback for these names.
 RETIRED_AGENT_ROLES = (
     "default", "explorer", "mechanical", "owner", "high-risk-owner",
@@ -22,6 +22,7 @@ RETIRED_AGENT_ROLES = (
     "luna-xhigh", "luna-max", "terra-explorer", "terra-researcher", "terra-low",
     "terra-medium", "terra-high", "terra-xhigh", "terra-max", "terra-ultra",
     "sol-max", "sol-ultra",
+    "sol-low", "sol-medium", "sol-high", "sol-xhigh", "sol-reviewer", "astra-reviewer",
 )
 MANAGED_AGENT_KEYS = {"enabled", "default_subagent_model", "default_subagent_reasoning_effort"}
 
@@ -205,9 +206,9 @@ def install(source_root: Path, codex_home: Path, global_agents: Path) -> list[Pa
     for role in EXPECTED_AGENT_ROLES:
         content = (source_root / "agents" / f"{role}.toml").read_text(encoding="utf-8")
         parsed = tomllib.loads(content)
-        reviewer = role in {"sol-reviewer", "astra-reviewer"}
-        model = "gpt-6-astra" if role == "astra-reviewer" else "gpt-6.1-sol"
-        effort = "xhigh" if role == "astra-reviewer" else "high" if role == "sol-reviewer" else role.removeprefix("sol-")
+        reviewer = role in {"reviewer", "risk-reviewer"}
+        model = "gpt-6-astra" if role == "risk-reviewer" else "gpt-6.1-sol"
+        effort = "xhigh" if role == "risk-reviewer" else "high" if role == "reviewer" else role.removeprefix("worker-")
         if (set(parsed) - allowed_fields or parsed.get("name") != role
                 or parsed.get("model") != model
                 or parsed.get("model_reasoning_effort") != effort

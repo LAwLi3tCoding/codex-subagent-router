@@ -1,4 +1,4 @@
-name = "sol-high"
+name = "worker-high"
 description = "Judgment-heavy debugging, compatibility, open design, business definitions, or multi-source synthesis."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "high"

@@ -10,31 +10,33 @@ A global delegation policy with four Sol execution roles and two independent, re
 
 Execution effort follows unresolved uncertainty and interacting invariants. Review follows concrete risk and required gates. Both reviewers return findings to the main session for adjudication; this policy guides native Codex routing rather than enforcing a token budget.
 
+Role names identify execution effort or review responsibility; their model bindings live in the role files and table below. Installation backs up and removes the old `sol-low`, `sol-medium`, `sol-high`, `sol-xhigh`, `sol-reviewer`, and `astra-reviewer` files, then installs the six new names without aliases. The model, effort, and read-only boundaries are unchanged. Restart Codex or use a freshly initialized session to reload the role definitions; already-running children are not evidence that migration was loaded.
+
 ## Delegate when it helps
 
-Delegate a task only when its goal, scope, dependencies, and acceptance checks are clear, and parallel work, context isolation, or independent judgment provides a concrete benefit. Otherwise, do the work directly. A bounded design investigation can qualify before the full design exists; `sol-high` can explore the open questions.
+Delegate a task only when its goal, scope, dependencies, and acceptance checks are clear, and parallel work, context isolation, or independent judgment provides a concrete benefit. Otherwise, do the work directly. A bounded design investigation can qualify before the full design exists; `worker-high` can explore the open questions.
 
 | Role | Model | Effort | Typical work |
 | --- | --- | --- | --- |
-| `sol-low` | `gpt-6.1-sol` | `low` | Bounded work with few decisions and clear checks. |
-| `sol-medium` | `gpt-6.1-sol` | `medium` | Routine implementation and investigation with local judgment. |
-| `sol-high` | `gpt-6.1-sol` | `high` | Unresolved causes, cross-module compatibility, or open design requiring judgment. |
-| `sol-xhigh` | `gpt-6.1-sol` | `xhigh` | Multiple interacting invariants across concurrency, migration, or recovery paths. |
-| `sol-reviewer` | `gpt-6.1-sol` | `high` | Independent, read-only review of ordinary features and generic review requests. |
-| `astra-reviewer` | `gpt-6-astra` | `xhigh` | Independent, read-only review of concrete consequential risks or explicit Astra requests. |
+| `worker-low` | `gpt-6.1-sol` | `low` | Bounded work with few decisions and clear checks. |
+| `worker-medium` | `gpt-6.1-sol` | `medium` | Routine implementation and investigation with local judgment. |
+| `worker-high` | `gpt-6.1-sol` | `high` | Unresolved causes, cross-module compatibility, or open design requiring judgment. |
+| `worker-xhigh` | `gpt-6.1-sol` | `xhigh` | Multiple interacting invariants across concurrency, migration, or recovery paths. |
+| `reviewer` | `gpt-6.1-sol` | `high` | Independent, read-only review of ordinary features and generic review requests. |
+| `risk-reviewer` | `gpt-6-astra` | `xhigh` | Independent, read-only review of concrete consequential risks or explicit Astra requests. |
 
 Choose effort from the task's reasoning needs. The four Sol roles do not override sandbox or permission settings: each assignment must state whether it is read-only or owns a limited write scope. Parallel writers require disjoint file ownership or isolated worktrees. Delegation preserves the user's authorization.
 
 Before spawning, weigh the specific parallel, isolation, or judgment benefit against startup, repeated reading, and integration work. Keep sequential edits and tasks requiring frequent intermediate exchanges with one executor. Choose the lowest effort sufficient for the actual uncertainty; cost targets do not justify downgrading consequential work.
 
-Routine investigation, implementation, and test fixes use `sol-medium`. A state field, many files, task length, or a domain keyword alone does not justify high/xhigh. Reassess once uncertainty is resolved, so routine execution does not inherit the design phase's effort. Luna remains a possible future mechanical-task experiment, not an installed route. The main model/effort remains the user's choice.
+Routine investigation, implementation, and test fixes use `worker-medium`. A state field, many files, task length, or a domain keyword alone does not justify high/xhigh. Reassess once uncertainty is resolved, so routine execution does not inherit the design phase's effort. Luna remains a possible future mechanical-task experiment, not an installed route. The main model/effort remains the user's choice.
 
 | Task | Routing decision |
 | --- | --- |
 | Fix a local formatting bug and run its existing check | Main session; a short sequence usually gains little from handoff. |
 | Implement two substantial independent modules with separate files and checks | Delegate bounded work in parallel when the expected benefit exceeds coordination work. |
 | Change a shared recovery protocol | Keep coupled decisions together; review a stable version with callers and necessary checks through Astra before the required action gate. |
-| Review an ordinary feature or handle a generic review request | Independent `sol-reviewer`, unless concrete consequential risk or a stronger gate requires Astra. |
+| Review an ordinary feature or handle a generic review request | Independent `reviewer`, unless concrete consequential risk or a stronger gate requires Astra. |
 | Explain an architecture or report progress | Main session unless independent investigation has concrete value; topic words alone do not require review. |
 
 ## Context and communication
@@ -52,8 +54,8 @@ Review-only requests go directly to risk selection, without first spawning an ex
 | Scope | Review |
 | --- | --- |
 | Local, reversible change with clear checks | Main-session verification, unless independent review is requested or a mandatory gate applies. |
-| Ordinary feature or generic review request | Independent read-only `sol-reviewer` at `high`. |
-| Concrete consequential security, permission, data-consistency, irreversible-operation, critical shared/recovery-protocol, or business judgment risk; explicit Astra request | Independent read-only `astra-reviewer` at `xhigh`. |
+| Ordinary feature or generic review request | Independent read-only `reviewer` at `high`. |
+| Concrete consequential security, permission, data-consistency, irreversible-operation, critical shared/recovery-protocol, or business judgment risk; explicit Astra request | Independent read-only `risk-reviewer` at `xhigh`. |
 
 Name the invariant or failure consequence that requires Astra. Effort, Ultra, architecture, and domain keywords alone do not trigger it. A batch containing consequential risk goes directly to Astra, even when the main session uses Astra. Stronger workspace/user gates still apply; missing evidence does not waive required review.
 

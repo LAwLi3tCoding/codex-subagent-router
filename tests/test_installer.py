@@ -10,12 +10,12 @@ from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_ROLES = {
-    "sol-low": ("gpt-6.1-sol", "low", None),
-    "sol-medium": ("gpt-6.1-sol", "medium", None),
-    "sol-high": ("gpt-6.1-sol", "high", None),
-    "sol-xhigh": ("gpt-6.1-sol", "xhigh", None),
-    "sol-reviewer": ("gpt-6.1-sol", "high", "read-only"),
-    "astra-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
+    "worker-low": ("gpt-6.1-sol", "low", None),
+    "worker-medium": ("gpt-6.1-sol", "medium", None),
+    "worker-high": ("gpt-6.1-sol", "high", None),
+    "worker-xhigh": ("gpt-6.1-sol", "xhigh", None),
+    "reviewer": ("gpt-6.1-sol", "high", "read-only"),
+    "risk-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
 }
 RETIRED_ROLES = (
     "default", "explorer", "mechanical", "owner", "high-risk-owner",
@@ -23,6 +23,7 @@ RETIRED_ROLES = (
     "luna-xhigh", "luna-max", "terra-explorer", "terra-researcher", "terra-low",
     "terra-medium", "terra-high", "terra-xhigh", "terra-max", "terra-ultra",
     "sol-max", "sol-ultra",
+    "sol-low", "sol-medium", "sol-high", "sol-xhigh", "sol-reviewer", "astra-reviewer",
 )
 
 
@@ -201,7 +202,7 @@ class InstallerContractTest(unittest.TestCase):
                 old_role = codex_home / "agents" / "owner.toml"
                 old_role.parent.mkdir()
                 old_role.write_text('name = "owner"\n', encoding="utf-8")
-                candidate = source / "agents" / "sol-high.toml"
+                candidate = source / "agents" / "worker-high.toml"
                 if case == "config":
                     config.write_text('model = [\n', encoding="utf-8")
                 elif case == "guidance":
@@ -248,8 +249,8 @@ class InstallerContractTest(unittest.TestCase):
                     if existing_agents:
                         agents = codex_home / "agents"
                         agents.mkdir()
-                        (agents / "sol-high.toml").write_text('name = "previous-sol-high"\n', encoding="utf-8")
-                        (agents / "sol-high.toml").chmod(0o600)
+                        (agents / "worker-high.toml").write_text('name = "previous-worker-high"\n', encoding="utf-8")
+                        (agents / "worker-high.toml").chmod(0o600)
                         (agents / "owner.toml").write_text('name = "owner"\n', encoding="utf-8")
                         (agents / "owner.toml").chmod(0o644)
                     before = profile_snapshot(codex_home)
@@ -258,7 +259,7 @@ class InstallerContractTest(unittest.TestCase):
 
                     def fail_first_role(path, content):
                         attempted.append(path.name)
-                        if path.name == "sol-low.toml":
+                        if path.name == "worker-low.toml":
                             if write_before_failure:
                                 original_write(path, content)
                             raise OSError("Simulated role write failure")
@@ -267,14 +268,14 @@ class InstallerContractTest(unittest.TestCase):
                     with mock.patch.object(self.installer, "_atomic_write", side_effect=fail_first_role):
                         with self.assertRaisesRegex(OSError, "Simulated role write failure"):
                             self.installer.install(REPO_ROOT, codex_home, guidance)
-                    self.assertEqual(attempted, ["config.toml", "AGENTS.md", "sol-low.toml"])
+                    self.assertEqual(attempted, ["config.toml", "AGENTS.md", "worker-low.toml"])
                     after = {
                         name: value for name, value in profile_snapshot(codex_home).items()
                         if name.split("/")[0] != "subagent-router-backups"
                     }
                     self.assertEqual(after, before)
                     for role in EXPECTED_ROLES:
-                        if not (existing_agents and role == "sol-high"):
+                        if not (existing_agents and role == "worker-high"):
                             self.assertFalse((codex_home / "agents" / f"{role}.toml").exists())
                     backup_dirs = list((codex_home / "subagent-router-backups").iterdir())
                     self.assertEqual(len(backup_dirs), 1)
@@ -295,7 +296,7 @@ class InstallerContractTest(unittest.TestCase):
 
             def fail_after_last_role(path, content):
                 original_write(path, content)
-                if path.name == "astra-reviewer.toml":
+                if path.name == "risk-reviewer.toml":
                     raise OSError("Simulated last role write failure")
 
             with mock.patch.object(self.installer, "_atomic_write", side_effect=fail_after_last_role):
@@ -329,7 +330,7 @@ class InstallerContractTest(unittest.TestCase):
 
             def fail_after_last_role(path, content):
                 original_write(path, content)
-                if path.name == "astra-reviewer.toml":
+                if path.name == "risk-reviewer.toml":
                     raise OSError("Simulated last role write failure")
 
             def fail_first_restore(source, destination):
@@ -370,7 +371,7 @@ class InstallerContractTest(unittest.TestCase):
             self.assertEqual(profile_snapshot(codex_home), before)
 
     def test_managed_config_and_role_symlinks_preserve_link_and_target(self):
-        for destination in ("config.toml", "agents/sol-low.toml"):
+        for destination in ("config.toml", "agents/worker-low.toml"):
             with self.subTest(destination=destination), tempfile.TemporaryDirectory() as temp_dir:
                 root = Path(temp_dir)
                 codex_home = root / ".codex"
@@ -421,7 +422,7 @@ class InstallerContractTest(unittest.TestCase):
     def test_shareable_tree_contains_no_machine_or_company_identifiers(self):
         self.assertEqual(self.verifier.scan_shareable_tree(REPO_ROOT), [])
 
-    def test_sol_reviewer_rejects_wrong_model_effort_or_writable_sandbox_before_writes(self):
+    def test_reviewer_rejects_wrong_model_effort_or_writable_sandbox_before_writes(self):
         cases = {
             "model": ('model = "gpt-6.1-sol"', 'model = "gpt-6-astra"'),
             "effort": ('model_reasoning_effort = "high"', 'model_reasoning_effort = "low"'),
@@ -433,16 +434,51 @@ class InstallerContractTest(unittest.TestCase):
                 source = root / "source"
                 for directory in ("agents", "policy"):
                     shutil.copytree(REPO_ROOT / directory, source / directory)
-                role = source / "agents" / "sol-reviewer.toml"
+                role = source / "agents" / "reviewer.toml"
                 role.write_text(role.read_text().replace(original, replacement), encoding="utf-8")
                 codex_home = root / ".codex"
                 codex_home.mkdir()
                 guidance = codex_home / "AGENTS.md"
                 guidance.write_text("Existing guidance.\n", encoding="utf-8")
                 before = profile_snapshot(codex_home)
-                with self.assertRaisesRegex(ValueError, "Invalid managed agent role: sol-reviewer"):
+                with self.assertRaisesRegex(ValueError, "Invalid managed agent role: reviewer"):
                     self.installer.install(source, codex_home, guidance)
                 self.assertEqual(profile_snapshot(codex_home), before)
+
+    def test_failed_rename_cleanup_restores_old_roles_and_removes_new_roles(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            codex_home = Path(temp_dir) / ".codex"
+            agents = codex_home / "agents"
+            agents.mkdir(parents=True)
+            guidance = codex_home / "AGENTS.md"
+            guidance.write_text("Existing guidance.\n", encoding="utf-8")
+            (codex_home / "config.toml").write_text('model = "gpt-6-astra"\nmodel_reasoning_effort = "ultra"\n', encoding="utf-8")
+            old_roles = ("sol-low", "sol-medium", "sol-high", "sol-xhigh", "sol-reviewer", "astra-reviewer")
+            for role in old_roles:
+                target = agents / f"{role}.toml"
+                target.write_text(f'name = "{role}"\n', encoding="utf-8")
+                target.chmod(0o640)
+            (agents / "custom.toml").write_text('name = "custom"\n', encoding="utf-8")
+            before = profile_snapshot(codex_home)
+            original_unlink = Path.unlink
+            failed = False
+
+            def fail_second_old_role(path, *args, **kwargs):
+                nonlocal failed
+                if path == (agents / "sol-medium.toml").resolve() and not failed:
+                    failed = True
+                    raise OSError("Simulated rename cleanup failure")
+                return original_unlink(path, *args, **kwargs)
+
+            with mock.patch.object(Path, "unlink", fail_second_old_role):
+                with self.assertRaisesRegex(OSError, "Simulated rename cleanup failure"):
+                    self.installer.install(REPO_ROOT, codex_home, guidance)
+            self.assertTrue(failed)
+            after = {name: value for name, value in profile_snapshot(codex_home).items()
+                     if name.split("/")[0] != "subagent-router-backups"}
+            self.assertEqual(after, before)
+            for role in EXPECTED_ROLES:
+                self.assertFalse((agents / f"{role}.toml").exists())
 
 
 if __name__ == "__main__":

@@ -48,17 +48,17 @@
 <text x="600" y="524" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="middle">减少中途交接</text>
 <rect x="816" y="232" width="336" height="344" rx="8" fill="#f5f5f5"/>
 <rect x="816" y="232" width="336" height="344" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1.2"/>
-<text x="840" y="268" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">按任务选择 Sol effort</text>
-<text x="840" y="308" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">sol-low</text>
+<text x="840" y="268" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">按任务选择执行 effort</text>
+<text x="840" y="308" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">worker-low</text>
 <text x="840" y="332" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">封闭、可机械验证</text>
 <path d="M840 356 H1128" stroke="#bfc0c0" stroke-width="0.8"/>
-<text x="840" y="372" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">sol-medium</text>
+<text x="840" y="372" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">worker-medium</text>
 <text x="840" y="396" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">常规调查、实现与测试</text>
 <path d="M840 420 H1128" stroke="#bfc0c0" stroke-width="0.8"/>
-<text x="840" y="436" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">sol-high</text>
+<text x="840" y="436" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">worker-high</text>
 <text x="840" y="460" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">根因未明、兼容与开放设计</text>
 <path d="M840 484 H1128" stroke="#bfc0c0" stroke-width="0.8"/>
-<text x="840" y="500" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">sol-xhigh</text>
+<text x="840" y="500" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">worker-xhigh</text>
 <text x="840" y="524" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">多个不变量、并发与恢复</text>
 <path d="M600 624 L760 688 L600 752 L440 688 Z" fill="#ffffff" stroke="#2d3142" stroke-width="1.2"/>
 <text x="600" y="684" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="600" fill="#2d3142" text-anchor="middle">具体风险与审阅要求</text>
@@ -70,14 +70,14 @@
 <text x="80" y="924" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">局部可逆；未要求独立审阅</text>
 <rect x="440" y="824" width="320" height="120" rx="8" fill="#f5f5f5"/>
 <rect x="440" y="824" width="320" height="120" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1.2"/>
-<text x="456" y="860" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">Sol 独立审阅</text>
+<text x="456" y="860" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">普通独立审阅</text>
 <text x="456" y="892" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">gpt-6.1-sol / high</text>
-<text x="456" y="924" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">sol-reviewer · read-only</text>
+<text x="456" y="924" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">reviewer · read-only</text>
 <rect x="816" y="824" width="320" height="120" rx="8" fill="#f5f5f5"/>
 <rect x="816" y="824" width="320" height="120" rx="8" fill="#fcebe2" stroke="#eb6c36" stroke-width="1.2"/>
-<text x="832" y="860" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">Astra 独立审阅</text>
+<text x="832" y="860" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">高风险独立审阅</text>
 <text x="832" y="892" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">gpt-6-astra / xhigh</text>
-<text x="832" y="924" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">astra-reviewer · read-only</text>
+<text x="832" y="924" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">risk-reviewer · read-only</text>
 <path d="M48 1040 H1152" stroke="#bfc0c0" stroke-width="0.8"/>
 <text x="48" y="1072" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">主会话裁决、集成与验收；实质修复由原风险审阅者复查。</text>
 <text x="48" y="1104" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">同批含重大风险直接交给 Astra；已有权限与工作区门禁继续适用。</text>

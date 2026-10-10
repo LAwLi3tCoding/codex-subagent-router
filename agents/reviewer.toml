@@ -1,4 +1,4 @@
-name = "sol-reviewer"
+name = "reviewer"
 description = "Independent read-only review of ordinary changes and generic review requests; escalates consequential risks to Astra."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "high"

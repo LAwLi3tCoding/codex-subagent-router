@@ -1,4 +1,4 @@
-name = "sol-medium"
+name = "worker-medium"
 description = "Ordinary bounded implementation, source investigation, fixed-metric queries, or editing verified facts."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "medium"

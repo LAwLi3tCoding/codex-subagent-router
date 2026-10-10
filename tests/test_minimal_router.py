@@ -6,12 +6,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_ROLES = {
-    "sol-low": ("gpt-6.1-sol", "low", None),
-    "sol-medium": ("gpt-6.1-sol", "medium", None),
-    "sol-high": ("gpt-6.1-sol", "high", None),
-    "sol-xhigh": ("gpt-6.1-sol", "xhigh", None),
-    "sol-reviewer": ("gpt-6.1-sol", "high", "read-only"),
-    "astra-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
+    "worker-low": ("gpt-6.1-sol", "low", None),
+    "worker-medium": ("gpt-6.1-sol", "medium", None),
+    "worker-high": ("gpt-6.1-sol", "high", None),
+    "worker-xhigh": ("gpt-6.1-sol", "xhigh", None),
+    "reviewer": ("gpt-6.1-sol", "high", "read-only"),
+    "risk-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
 }
 
 
@@ -41,11 +41,11 @@ class MinimalRouterContractTest(unittest.TestCase):
                     (REPO_ROOT / "agents" / f"{role}.toml").read_text(encoding="utf-8")
                 )
                 expected_keys = allowed_keys | (
-                    {"sandbox_mode"} if role.endswith("-reviewer") else set()
+                    {"sandbox_mode"} if role in {"reviewer", "risk-reviewer"} else set()
                 )
                 self.assertEqual(set(config), expected_keys)
 
-    def test_migration_retires_legacy_roles_but_keeps_current_sol_roles(self):
+    def test_migration_retires_legacy_roles_but_keeps_current_named_roles(self):
         path = REPO_ROOT / "scripts" / "install.py"
         spec = importlib.util.spec_from_file_location("minimal_router_install", path)
         self.assertIsNotNone(spec)
@@ -58,6 +58,7 @@ class MinimalRouterContractTest(unittest.TestCase):
             "luna-low", "luna-medium", "luna-high", "luna-xhigh", "luna-max",
             "terra-low", "terra-medium", "terra-high", "terra-xhigh",
             "terra-max", "terra-ultra", "sol-max", "sol-ultra",
+            "sol-low", "sol-medium", "sol-high", "sol-xhigh", "sol-reviewer", "astra-reviewer",
         ):
             with self.subTest(role=role):
                 self.assertIn(role, installer.RETIRED_AGENT_ROLES)

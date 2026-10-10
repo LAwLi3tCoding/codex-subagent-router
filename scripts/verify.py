@@ -11,12 +11,12 @@ from pathlib import Path
 BLOCK_START = "<!-- CODEX-SUBAGENT-ROUTER:START -->"
 BLOCK_END = "<!-- CODEX-SUBAGENT-ROUTER:END -->"
 EXPECTED_ROLES = {
-    "sol-low": ("gpt-6.1-sol", "low", None),
-    "sol-medium": ("gpt-6.1-sol", "medium", None),
-    "sol-high": ("gpt-6.1-sol", "high", None),
-    "sol-xhigh": ("gpt-6.1-sol", "xhigh", None),
-    "sol-reviewer": ("gpt-6.1-sol", "high", "read-only"),
-    "astra-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
+    "worker-low": ("gpt-6.1-sol", "low", None),
+    "worker-medium": ("gpt-6.1-sol", "medium", None),
+    "worker-high": ("gpt-6.1-sol", "high", None),
+    "worker-xhigh": ("gpt-6.1-sol", "xhigh", None),
+    "reviewer": ("gpt-6.1-sol", "high", "read-only"),
+    "risk-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
 }
 # Obsolete installed files are errors, not supported execution roles.
 RETIRED_AGENT_ROLES = (
@@ -25,6 +25,7 @@ RETIRED_AGENT_ROLES = (
     "luna-xhigh", "luna-max", "terra-explorer", "terra-researcher", "terra-low",
     "terra-medium", "terra-high", "terra-xhigh", "terra-max", "terra-ultra",
     "sol-max", "sol-ultra",
+    "sol-low", "sol-medium", "sol-high", "sol-xhigh", "sol-reviewer", "astra-reviewer",
 )
 
 

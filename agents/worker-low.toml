@@ -1,4 +1,4 @@
-name = "sol-low"
+name = "worker-low"
 description = "Closed, mechanically checkable extraction or conversion with clear delegation value."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "low"

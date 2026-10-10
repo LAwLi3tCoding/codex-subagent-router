@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1152" viewBox="0 0 1200 1152" role="img" aria-labelledby="routing-zh-title routing-zh-desc">
+<title id="routing-zh-title">按收益委派，按风险审阅</title>
+<desc id="routing-zh-desc">主会话保留用户模型与effort；执行按收益和复杂度委派，审阅按风险分为主会话、Sol及Astra，重大风险升级并由原审阅者复查。</desc>
+<defs>
+<marker id="routing-zh-arrow" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#4f5d75"/></marker>
+<marker id="routing-zh-arrow-accent" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#eb6c36"/></marker>
+<marker id="routing-zh-arrow-link" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#2e5aa8"/></marker>
+</defs>
+<rect width="1200" height="1152" fill="#f5f5f5"/>
+<path d="M600 208 V244" fill="none" stroke="#4f5d75" stroke-width="1.6" marker-end="url(#routing-zh-arrow)"/>
+<path d="M416 168 H384 Q376 168 376 176 V604 Q376 612 384 612 H552 Q560 612 560 620 V640" fill="none" stroke="#4f5d75" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#routing-zh-arrow)"/>
+<rect x="232" y="384" width="136" height="24" rx="4" fill="#f5f5f5"/>
+<text x="300" y="400" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="500" fill="#4f5d75" text-anchor="middle">仅审阅请求</text>
+<path d="M760 308 H816" fill="none" stroke="#4f5d75" stroke-width="1.6" marker-end="url(#routing-zh-arrow)"/>
+<rect x="768" y="276" width="40" height="24" rx="4" fill="#f5f5f5"/>
+<text x="788" y="292" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="500" fill="#4f5d75" text-anchor="middle">是</text>
+<path d="M600 372 V432" fill="none" stroke="#4f5d75" stroke-width="1.6" marker-end="url(#routing-zh-arrow)"/>
+<rect x="608" y="384" width="40" height="24" rx="4" fill="#f5f5f5"/>
+<text x="628" y="400" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="500" fill="#4f5d75" text-anchor="middle">否</text>
+<path d="M600 544 V624" fill="none" stroke="#4f5d75" stroke-width="1.6" marker-end="url(#routing-zh-arrow)"/>
+<path d="M984 576 V596 Q984 604 976 604 H648 Q640 604 640 612 V640" fill="none" stroke="#4f5d75" stroke-width="1.6" marker-end="url(#routing-zh-arrow)"/>
+<path d="M440 688 H232 Q224 688 224 696 V824" fill="none" stroke="#4f5d75" stroke-width="1.6" marker-end="url(#routing-zh-arrow)"/>
+<rect x="272" y="656" width="128" height="24" rx="4" fill="#f5f5f5"/>
+<text x="336" y="672" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="500" fill="#4f5d75" text-anchor="middle">局部明确检查</text>
+<path d="M600 752 V824" fill="none" stroke="#4f5d75" stroke-width="1.6" marker-end="url(#routing-zh-arrow)"/>
+<rect x="608" y="772" width="156" height="24" rx="4" fill="#f5f5f5"/>
+<text x="686" y="788" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="500" fill="#4f5d75" text-anchor="middle">普通审阅请求</text>
+<path d="M760 688 H968 Q976 688 976 696 V824" fill="none" stroke="#4f5d75" stroke-width="1.6" marker-end="url(#routing-zh-arrow)"/>
+<rect x="788" y="656" width="172" height="24" rx="4" fill="#f5f5f5"/>
+<text x="874" y="672" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="500" fill="#4f5d75" text-anchor="middle">重大风险 / Astra</text>
+<path d="M720 944 V984 Q720 992 728 992 H968 Q976 992 976 984 V944" fill="none" stroke="#4f5d75" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#routing-zh-arrow)"/>
+<rect x="792" y="960" width="152" height="24" rx="4" fill="#f5f5f5"/>
+<text x="868" y="976" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="500" fill="#4f5d75" text-anchor="middle">发现重大风险</text>
+<text x="48" y="48" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="16" font-weight="500" fill="#4f5d75" text-anchor="start">CODEX / NATIVE SUBAGENTS</text>
+<text x="48" y="96" font-family="'Instrument Serif', Georgia, 'Songti SC', serif" font-size="40" font-weight="400" fill="#2d3142" text-anchor="start">按收益委派，按风险审阅</text>
+<rect x="416" y="128" width="368" height="80" rx="8" fill="#f5f5f5"/>
+<rect x="416" y="128" width="368" height="80" rx="8" fill="#fcebe2" stroke="#eb6c36" stroke-width="1.2"/>
+<text x="600" y="160" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="middle">主会话 · 总体判断</text>
+<text x="600" y="188" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="middle">保留用户所选模型与 effort</text>
+<path d="M600 244 L760 308 L600 372 L440 308 Z" fill="#ffffff" stroke="#2d3142" stroke-width="1.2"/>
+<text x="600" y="304" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="600" fill="#2d3142" text-anchor="middle">委派收益明确？</text>
+<text x="600" y="328" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="middle">并行 / 隔离 / 独立判断</text>
+<rect x="416" y="432" width="368" height="112" rx="8" fill="#f5f5f5"/>
+<rect x="416" y="432" width="368" height="112" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1.2"/>
+<text x="600" y="468" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="middle">主会话直接执行</text>
+<text x="600" y="500" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="middle">短任务 / 紧密依赖 / 未分类</text>
+<text x="600" y="524" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="middle">减少中途交接</text>
+<rect x="816" y="232" width="336" height="344" rx="8" fill="#f5f5f5"/>
+<rect x="816" y="232" width="336" height="344" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1.2"/>
+<text x="840" y="268" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">按任务选择 Sol effort</text>
+<text x="840" y="308" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">sol-low</text>
+<text x="840" y="332" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">封闭、可机械验证</text>
+<path d="M840 356 H1128" stroke="#bfc0c0" stroke-width="0.8"/>
+<text x="840" y="372" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">sol-medium</text>
+<text x="840" y="396" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">常规调查、实现与测试</text>
+<path d="M840 420 H1128" stroke="#bfc0c0" stroke-width="0.8"/>
+<text x="840" y="436" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">sol-high</text>
+<text x="840" y="460" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">根因未明、兼容与开放设计</text>
+<path d="M840 484 H1128" stroke="#bfc0c0" stroke-width="0.8"/>
+<text x="840" y="500" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="600" fill="#2d3142" text-anchor="start">sol-xhigh</text>
+<text x="840" y="524" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">多个不变量、并发与恢复</text>
+<path d="M600 624 L760 688 L600 752 L440 688 Z" fill="#ffffff" stroke="#2d3142" stroke-width="1.2"/>
+<text x="600" y="684" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="20" font-weight="600" fill="#2d3142" text-anchor="middle">具体风险与审阅要求</text>
+<text x="600" y="708" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="middle">风险与更强门禁优先</text>
+<rect x="64" y="824" width="320" height="120" rx="8" fill="#f5f5f5"/>
+<rect x="64" y="824" width="320" height="120" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1.2"/>
+<text x="80" y="860" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">主会话验证</text>
+<text x="80" y="892" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">Existing checks</text>
+<text x="80" y="924" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">局部可逆；未要求独立审阅</text>
+<rect x="440" y="824" width="320" height="120" rx="8" fill="#f5f5f5"/>
+<rect x="440" y="824" width="320" height="120" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1.2"/>
+<text x="456" y="860" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">Sol 独立审阅</text>
+<text x="456" y="892" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">gpt-6.1-sol / high</text>
+<text x="456" y="924" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">sol-reviewer · read-only</text>
+<rect x="816" y="824" width="320" height="120" rx="8" fill="#f5f5f5"/>
+<rect x="816" y="824" width="320" height="120" rx="8" fill="#fcebe2" stroke="#eb6c36" stroke-width="1.2"/>
+<text x="832" y="860" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="24" font-weight="600" fill="#2d3142" text-anchor="start">Astra 独立审阅</text>
+<text x="832" y="892" font-family="'Geist Mono', 'SFMono-Regular', Consolas, monospace" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">gpt-6-astra / xhigh</text>
+<text x="832" y="924" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">astra-reviewer · read-only</text>
+<path d="M48 1040 H1152" stroke="#bfc0c0" stroke-width="0.8"/>
+<text x="48" y="1072" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">主会话裁决、集成与验收；实质修复由原风险审阅者复查。</text>
+<text x="48" y="1104" font-family="'Geist', 'Arial', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="16" font-weight="400" fill="#4f5d75" text-anchor="start">同批含重大风险直接交给 Astra；已有权限与工作区门禁继续适用。</text>
+</svg>

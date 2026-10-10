@@ -14,6 +14,7 @@ EXPECTED_ROLES = {
     "sol-medium": ("gpt-6.1-sol", "medium", None),
     "sol-high": ("gpt-6.1-sol", "high", None),
     "sol-xhigh": ("gpt-6.1-sol", "xhigh", None),
+    "sol-reviewer": ("gpt-6.1-sol", "high", "read-only"),
     "astra-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
 }
 RETIRED_ROLES = (
@@ -419,6 +420,29 @@ class InstallerContractTest(unittest.TestCase):
 
     def test_shareable_tree_contains_no_machine_or_company_identifiers(self):
         self.assertEqual(self.verifier.scan_shareable_tree(REPO_ROOT), [])
+
+    def test_sol_reviewer_rejects_wrong_model_effort_or_writable_sandbox_before_writes(self):
+        cases = {
+            "model": ('model = "gpt-6.1-sol"', 'model = "gpt-6-astra"'),
+            "effort": ('model_reasoning_effort = "high"', 'model_reasoning_effort = "low"'),
+            "sandbox": ('sandbox_mode = "read-only"', 'sandbox_mode = "workspace-write"'),
+        }
+        for case, (original, replacement) in cases.items():
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                source = root / "source"
+                for directory in ("agents", "policy"):
+                    shutil.copytree(REPO_ROOT / directory, source / directory)
+                role = source / "agents" / "sol-reviewer.toml"
+                role.write_text(role.read_text().replace(original, replacement), encoding="utf-8")
+                codex_home = root / ".codex"
+                codex_home.mkdir()
+                guidance = codex_home / "AGENTS.md"
+                guidance.write_text("Existing guidance.\n", encoding="utf-8")
+                before = profile_snapshot(codex_home)
+                with self.assertRaisesRegex(ValueError, "Invalid managed agent role: sol-reviewer"):
+                    self.installer.install(source, codex_home, guidance)
+                self.assertEqual(profile_snapshot(codex_home), before)
 
 
 if __name__ == "__main__":

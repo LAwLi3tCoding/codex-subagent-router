@@ -15,6 +15,7 @@ EXPECTED_ROLES = {
     "sol-medium": ("gpt-6.1-sol", "medium", None),
     "sol-high": ("gpt-6.1-sol", "high", None),
     "sol-xhigh": ("gpt-6.1-sol", "xhigh", None),
+    "sol-reviewer": ("gpt-6.1-sol", "high", "read-only"),
     "astra-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
 }
 # Obsolete installed files are errors, not supported execution roles.

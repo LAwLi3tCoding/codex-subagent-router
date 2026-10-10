@@ -14,7 +14,7 @@ from pathlib import Path
 
 BLOCK_START = "<!-- CODEX-SUBAGENT-ROUTER:START -->"
 BLOCK_END = "<!-- CODEX-SUBAGENT-ROUTER:END -->"
-EXPECTED_AGENT_ROLES = ("sol-low", "sol-medium", "sol-high", "sol-xhigh", "astra-reviewer")
+EXPECTED_AGENT_ROLES = ("sol-low", "sol-medium", "sol-high", "sol-xhigh", "sol-reviewer", "astra-reviewer")
 # Installation cleanup only: no aliases, routing, or fallback for these names.
 RETIRED_AGENT_ROLES = (
     "default", "explorer", "mechanical", "owner", "high-risk-owner",
@@ -205,10 +205,12 @@ def install(source_root: Path, codex_home: Path, global_agents: Path) -> list[Pa
     for role in EXPECTED_AGENT_ROLES:
         content = (source_root / "agents" / f"{role}.toml").read_text(encoding="utf-8")
         parsed = tomllib.loads(content)
-        reviewer = role == "astra-reviewer"
+        reviewer = role in {"sol-reviewer", "astra-reviewer"}
+        model = "gpt-6-astra" if role == "astra-reviewer" else "gpt-6.1-sol"
+        effort = "xhigh" if role == "astra-reviewer" else "high" if role == "sol-reviewer" else role.removeprefix("sol-")
         if (set(parsed) - allowed_fields or parsed.get("name") != role
-                or parsed.get("model") != ("gpt-6-astra" if reviewer else "gpt-6.1-sol")
-                or parsed.get("model_reasoning_effort") != ("xhigh" if reviewer else role.removeprefix("sol-"))
+                or parsed.get("model") != model
+                or parsed.get("model_reasoning_effort") != effort
                 or not str(parsed.get("description", "")).strip()
                 or not str(parsed.get("developer_instructions", "")).strip()
                 or parsed.get("sandbox_mode") != ("read-only" if reviewer else None)):

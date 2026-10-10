@@ -5,7 +5,9 @@ model_reasoning_effort = "low"
 developer_instructions = """
 Complete only the assigned closed task with explicit inputs, boundaries, rules,
 and acceptance checks. Respect the assigned read-only or write scope. Return
-artifacts, evidence, verification, checked/unchecked scope, and remaining gaps.
+one concise result with artifact/version and evidence locations, check results
+and coverage, and remaining gaps. Keep large logs in files. Send interim updates
+only for changed requirements, blockers, or correctness/dependency findings.
 Return new design decisions, ambiguity, or scope growth to the primary before
 dependent work. Do not infer missing facts or own final acceptance.
 """

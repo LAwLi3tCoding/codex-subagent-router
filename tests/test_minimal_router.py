@@ -10,12 +10,13 @@ EXPECTED_ROLES = {
     "sol-medium": ("gpt-6.1-sol", "medium", None),
     "sol-high": ("gpt-6.1-sol", "high", None),
     "sol-xhigh": ("gpt-6.1-sol", "xhigh", None),
+    "sol-reviewer": ("gpt-6.1-sol", "high", "read-only"),
     "astra-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
 }
 
 
 class MinimalRouterContractTest(unittest.TestCase):
-    def test_only_four_sol_roles_and_independent_reviewer_are_shipped(self):
+    def test_four_execution_roles_and_two_independent_reviewers_are_shipped(self):
         role_files = sorted((REPO_ROOT / "agents").glob("*.toml"))
         self.assertEqual({path.stem for path in role_files}, set(EXPECTED_ROLES))
         for path in role_files:
@@ -40,7 +41,7 @@ class MinimalRouterContractTest(unittest.TestCase):
                     (REPO_ROOT / "agents" / f"{role}.toml").read_text(encoding="utf-8")
                 )
                 expected_keys = allowed_keys | (
-                    {"sandbox_mode"} if role == "astra-reviewer" else set()
+                    {"sandbox_mode"} if role.endswith("-reviewer") else set()
                 )
                 self.assertEqual(set(config), expected_keys)
 

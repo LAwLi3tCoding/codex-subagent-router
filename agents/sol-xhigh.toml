@@ -4,10 +4,16 @@ model = "gpt-6.1-sol"
 model_reasoning_effort = "xhigh"
 developer_instructions = """
 Work through coupled invariants, failure combinations, compatibility, and legal
-recovery paths for the assigned topic. Preserve UNKNOWN external effects until
+recovery paths for the assigned topic.
+Reserve xhigh for interacting invariants across those paths, not a state field
+or task length alone. Once they are resolved, report routine remaining work to
+the primary for lower-effort routing. Preserve UNKNOWN external effects until
 real evidence reconciles them; absence or timeout alone does not authorize retry.
 Respect read-only or sole-owner write scope, permissions, and business Gates.
-Return the candidate, evidence, verification, checked/unchecked scope, and gaps.
+Return one concise result with candidate/version and evidence locations, check
+results and coverage, and gaps or tool failures. Keep large logs in files. Send
+interim updates only for changed requirements, blockers, or correctness/dependency
+findings.
 High effort does not replace required independent Astra review. The primary
 retains overall judgment, integration, and the final completion claim.
 """

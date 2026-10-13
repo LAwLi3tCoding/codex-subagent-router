@@ -11,10 +11,35 @@ or applicable task/role binding, and recommend only the unspecified parameter.
 Preserve the selected role's instructions, permissions, tools, context mode,
 and workflow requirements.
 
-For an unspecified model, recommend `gpt-6.1-sol`. Astra is excluded from
-automatic model selection until the human explicitly restores it.
+For an unspecified model, choose from the following candidates, subject to the
+runtime's available models and any already-selected effort:
 
-For an unspecified effort, choose the lowest sufficient supported level based
+| Model | Automatic effort choices | Selection boundary |
+| --- | --- | --- |
+| `gpt-6-luna` | `max` only | Closed, bounded work with an established solution, explicit inputs and checks, and little unresolved behavioral judgment: mechanical edits, precise extraction, or applying a verified transformation. |
+| `gpt-6.1-sol` | `low`, `medium`, `high`, `xhigh`, `max` | Default for implementation and investigation requiring judgment, uncertain callers or compatibility, and tasks not clearly eligible for Luna or Astra. |
+| `gpt-6-astra` | `high`, `xhigh`, `max` | Exceptionally demanding reasoning: deeply coupled constraints, competing explanations/designs, and consequential failure modes, with adequate evidence and a specific reason to expect Sol to be insufficient. |
+
+Astra is now permitted in automatic model selection. Its selection requires a
+concrete reasoning need; security, architecture, review, task length, or a failed
+tool alone does not select Astra. A prior Sol attempt is not mandatory; an observed
+Sol limitation must be a reasoning gap rather than missing evidence or tools.
+Ordinary difficult work remains on Sol. Explain an Astra selection briefly.
+
+Luna is eligible only when the resulting effort is max: if effort is unspecified,
+recommend max for Luna; if a different effort is already fixed, choose another
+eligible model without changing that effort. Do not recommend Luna at low,
+medium, high, or xhigh, including as an unsupported-max fallback. Explicit user
+choices or fixed role bindings still take precedence; report a non-router pair
+as an explicit setting, not as this router's recommendation.
+
+Effort is model-relative. Luna/max is a fixed pairing for bounded work, not a claim
+that the task requires Sol/max or Astra/max reasoning. Model eligibility comes
+before choosing an unspecified effort. The five-level rubric below applies to
+Sol and Astra, constrained by their automatic effort choices above. This policy
+sets selection heuristics, not measured quality, price, or speed guarantees.
+
+For an unspecified Sol/Astra effort, choose the lowest sufficient supported level based
 on the reasoning needed for the current assignment:
 
 | Effort | Selection boundary |
@@ -32,8 +57,8 @@ which unresolved interaction or competing explanation needs xhigh/max. Explicit
 human choices remain authoritative; do not downgrade them automatically.
 
 Reassess at natural assignment or phase boundaries. Once the cause or design is
-settled, routine implementation normally returns to medium, and mechanical
-follow-up to low. Select settings for the next invocation only when the existing
+settled, routine implementation normally returns to Sol/medium, and mechanical
+follow-up can use Luna/max or Sol/low according to eligibility. Select settings for the next invocation only when the existing
 workflow already calls for one; do not create, restart, split, or repeat tasks
 solely to change effort.
 
@@ -47,7 +72,8 @@ effort without identifying the new reasoning need.
 
 Apply a recommendation only through model/effort fields supported by the current
 runtime and compatible with the selected role and context. If the requested
-level is unsupported, use a supported level only when it is sufficient; otherwise
+level is unsupported, use a supported level only when it is sufficient and allowed
+for the selected model; otherwise
 retain the existing invocation and report the limitation. Do not silently call
 xhigh max, change models/roles/context, edit configuration, or alter workflow to
 force the mapping. Distinguish recommended/requested settings from runtime-

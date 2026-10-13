@@ -10,11 +10,26 @@ role, require independent review, escalate findings, or repeat a review.
 
 Preserve the human-selected primary model and effort, including Ultra. Resolve
 model and effort independently: preserve each explicit user choice or applicable
-task/role binding, and recommend only the missing parameter. For an unspecified
-model, recommend `gpt-6.1-sol`; Astra is excluded from automatic selection until
-the user explicitly restores it.
+task/role binding, and recommend only the missing parameter. For automatic model
+selection:
 
-Choose the lowest sufficient supported effort for the current assignment:
+| Model | Effort choices | Eligible work |
+| --- | --- | --- |
+| `gpt-6-luna` | **max only** | Closed, bounded work with an established solution and explicit checks. |
+| `gpt-6.1-sol` | low / medium / high / xhigh / max | Default for implementation, investigation, and judgment; also the fallback when Luna/Astra eligibility is unclear. |
+| `gpt-6-astra` | high / xhigh / max | Exceptionally demanding synthesis with coupled constraints, competing solutions, adequate evidence, and a specific reason Sol is expected to be insufficient. |
+
+Astra is enabled again for automatic selection. Review, security, task length,
+or a tool failure alone does not select it. A prior Sol attempt is not mandatory;
+explain the actual reasoning need. This router still does not start any review.
+
+Luna uses max even for simple eligible tasks. Effort is model-relative: Luna/max
+does not imply Sol/max or Astra/max task complexity. If an existing effort is not
+max and the model is unspecified, exclude Luna without changing the fixed effort.
+Explicit user settings and role bindings remain authoritative. Unsupported Luna
+max never falls back to another Luna effort.
+
+For Sol/Astra, choose the lowest sufficient supported effort from the model's automatic choices:
 
 | Effort | Selection boundary |
 | --- | --- |
@@ -31,14 +46,15 @@ review status, and the primary's Ultra setting alone do not justify higher effor
 Missing evidence or failing tools call for recovery, not automatic escalation.
 
 Reassess at existing phase boundaries: after the cause or design is settled,
-routine implementation normally returns to medium, mechanical follow-up to low.
+routine implementation normally returns to Sol/medium, and mechanical follow-up
+can use Luna/max or Sol/low depending on eligibility.
 Keep human-selected settings and do not spawn, restart, split, or repeat a task
 just to change effort. See the [policy](policy/subagent-routing.md) for boundaries.
 
 The policy is guidance, not a runtime interceptor. Apply recommendations only
 through supported model/effort fields compatible with the selected role and
 context. If a level is unsupported, use another supported level only when it is
-sufficient; otherwise retain the invocation and report the limitation. Fixed
+sufficient and allowed for that model; otherwise retain the invocation and report the limitation. Fixed
 role bindings remain authoritative. Do not change models, roles, context modes,
 configuration, or workflows to force a mapping. Installation does not prove the
 actual model or effort a child ran.

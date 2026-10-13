@@ -27,38 +27,30 @@ and rate evidence; token counts alone do not establish savings.
 
 Keep private task content and machine-specific logs outside this repository.
 
-## Effort calibration cases
+## Calibration cases
 
-Keep delegation and review decisions fixed. Compare the reasoning boundaries
-below rather than assuming a larger task needs a higher level:
+Keep delegation and review decisions fixed. Compare the six automatic combinations
+using the same task and acceptance checks:
 
 | Assignment | Candidate | Distinguishing evidence |
 | --- | --- | --- |
-| Apply a known rename with clear callers and checks | Luna/max or Sol/low | No unresolved behavioral choice. |
-| Implement an established interface in a bounded module | medium | Local judgment within a settled contract. |
-| Diagnose a reproducible fault with several plausible causes | high | Need to discriminate hypotheses. |
-| Plan a migration with concurrent writers and failure recovery | xhigh | Correctness depends on interacting states and constraints. |
-| Resolve incompatible recovery designs with competing evidence and consequential failure modes | max | Adequate evidence still leaves a tightly coupled decision needing unusually deep synthesis. |
+| Apply a known rename with clear callers and checks | Sol/low | No unresolved behavioral choice. |
+| Implement an established interface in a bounded module | Sol/medium | Local judgment within a settled contract. |
+| Diagnose a reproducible fault with several plausible causes | Sol/high | Need to discriminate hypotheses. |
+| Plan a migration with concurrent writers and failure recovery | Sol/xhigh | Correctness depends on interacting states and constraints. |
+| Deeply explore recovery paths within a clearly defined protocol | Sol/max | Problem frame is established; completeness needs extensive reasoning. |
+| Reconstruct a causal model when the established explanation cannot reconcile cross-component evidence | Astra/xhigh | Specific need to reconsider the problem frame with adequate evidence. |
 | Retrieve a missing log or recover a failed tool invocation | No automatic increase | The blocker is evidence or tool availability. |
-| Implement routine edits after a max-level design decision | Sol/medium, Sol/low, or eligible Luna/max | The remaining assignment no longer contains the design uncertainty. |
-| User pins high, model is unspecified | Keep high; normally Sol, exclude Luna | Resolve parameters independently. |
-| User pins a model, effort is unspecified | Keep model; select supported effort | Do not replace the model to obtain max. |
+| Implement routine edits after a max-level design decision | Sol/medium or Sol/low | Remaining work no longer contains the design uncertainty. |
+| User pins high, model is unspecified | Sol/high | Preserve the fixed effort. |
+| User pins Astra, effort is unspecified | Astra/xhigh | Preserve the fixed model. |
+| User explicitly pins Astra/max | Keep Astra/max | Explicit settings take precedence; this is not an automatic route. |
 
-These are policy examples, not measured runtime outcomes. Unsupported max remains
-an explicit limitation when a lower supported level is insufficient; do not count
-an xhigh run as a max run. Phase changes do not authorize new invocations.
+Luna is excluded from automatic selection. Astra/high and Astra/max are explicit
+choices only. Unsupported settings remain limitations; do not record an xhigh
+run as max. These examples are policy expectations, not runtime outcomes.
 
-## Model eligibility cases
-
-| Situation | Recommendation | Boundary |
-| --- | --- | --- |
-| Closed extraction with explicit source and acceptance checks | Luna/max | Bounded work with little unresolved judgment. |
-| A small edit has unknown compatibility with dynamic callers | Sol at sufficient effort | Small size does not establish Luna eligibility. |
-| Coupled design has adequate evidence and a concrete Sol reasoning limitation | Astra at sufficient high/xhigh/max | Specific difficulty, not a domain label or automatic review escalation. |
-| A log is unavailable or authentication fails | No automatic model escalation | Recover evidence or access. |
-| Effort is pinned to medium, model is open | Sol/medium | Luna is max-only. |
-| Luna is pinned, effort is open | Luna/max if supported | Do not downgrade Luna to another effort. |
-| Luna/max is unavailable | Report limitation; preserve explicit settings | Do not invent capability or replace an explicit model. |
-
-Compare model/effort pairs with the same task and checks before asserting quality,
-cost, or speed improvements. These heuristics are not benchmark results.
+Calibrate Sol/max against Astra/xhigh on the same difficult tasks before asserting
+that problem-frame reconstruction is a stable model boundary. Record missed
+requirements, corrections, elapsed time, and usage separately. If the distinction
+is unclear, prefer Sol. Phase changes do not authorize extra invocations.

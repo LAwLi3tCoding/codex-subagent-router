@@ -9,55 +9,43 @@ role, require independent review, escalate findings, or repeat a review.
 ## Selection
 
 Preserve the human-selected primary model and effort, including Ultra. Resolve
-model and effort independently: preserve each explicit user choice or applicable
-task/role binding, and recommend only the missing parameter. For automatic model
-selection:
+model and effort independently: retain each explicit user choice or applicable
+task/role binding, and recommend only the missing parameter.
 
-| Model | Effort choices | Eligible work |
-| --- | --- | --- |
-| `gpt-6-luna` | **max only** | Closed, bounded work with an established solution and explicit checks. |
-| `gpt-6.1-sol` | low / medium / high / xhigh / max | Default for implementation, investigation, and judgment; also the fallback when Luna/Astra eligibility is unclear. |
-| `gpt-6-astra` | high / xhigh / max | Exceptionally demanding synthesis with coupled constraints, competing solutions, adequate evidence, and a specific reason Sol is expected to be insufficient. |
+The router uses six automatic combinations:
 
-Astra is enabled again for automatic selection. Review, security, task length,
-or a tool failure alone does not select it. A prior Sol attempt is not mandatory;
-explain the actual reasoning need. This router still does not start any review.
-
-Luna uses max even for simple eligible tasks. Effort is model-relative: Luna/max
-does not imply Sol/max or Astra/max task complexity. If an existing effort is not
-max and the model is unspecified, exclude Luna without changing the fixed effort.
-Explicit user settings and role bindings remain authoritative. Unsupported Luna
-max never falls back to another Luna effort.
-
-For Sol/Astra, choose the lowest sufficient supported effort from the model's automatic choices:
-
-| Effort | Selection boundary |
+| Model + effort | Selection boundary |
 | --- | --- |
-| `low` | Known solution, precise inputs and checks, little judgment. |
-| `medium` | Routine implementation or bounded investigation with local judgment. |
-| `high` | A material open question needs hypothesis testing or alternative comparison. |
-| `xhigh` | Multiple interacting constraints across components or states need joint reasoning. |
-| `max` | Coupled constraints, competing plausible solutions, and consequential failure modes need unusually deep synthesis despite adequate evidence. |
+| **Sol/low** (`gpt-6.1-sol`) | Known solution, closed scope, explicit inputs and checks; little judgment. |
+| **Sol/medium** | Understood requirements and scope; routine work needs local judgment. |
+| **Sol/high** | A material open question requires hypothesis testing or alternative comparison. |
+| **Sol/xhigh** | Interacting constraints across components or states require joint reasoning. |
+| **Sol/max** | A well-formulated problem needs deep exploration of paths and competing solutions for a complete conclusion. |
+| **Astra/xhigh** (`gpt-6-astra`) | The problem frame may be inadequate and needs reconstruction, with adequate evidence and a concrete reason Sol is expected to be insufficient. |
 
-`max` is an automatic candidate when all its conditions hold; it no longer needs
-an explicit exception. A prior xhigh attempt is not required. Explain the specific
-reasoning need for xhigh/max briefly. High consequence, task length, file count,
-review status, and the primary's Ultra setting alone do not justify higher effort.
-Missing evidence or failing tools call for recovery, not automatic escalation.
+**Sol is the default; Luna is excluded from automatic selection.** Astra/high
+and Astra/max remain explicit choices only. Explicit user settings and role
+bindings take precedence and limit eligible automatic combinations.
 
-Reassess at existing phase boundaries: after the cause or design is settled,
-routine implementation normally returns to Sol/medium, and mechanical follow-up
-can use Luna/max or Sol/low depending on eligibility.
-Keep human-selected settings and do not spawn, restart, split, or repeat a task
-just to change effort. See the [policy](policy/subagent-routing.md) for boundaries.
+Sol/max deepens reasoning within an established problem frame; Astra/xhigh is
+for reconsidering the frame itself. If this distinction is unclear, prefer Sol.
+Explain the concrete need for Astra briefly. Neither route requires a prior
+attempt at a lower level. These boundaries are heuristics, not measured quality,
+price, or speed guarantees. See the [policy](policy/subagent-routing.md).
+
+Choose the lowest sufficient Sol effort. High consequence, domain labels,
+review status, task length, and the primary's Ultra setting alone do not justify
+an increase. Missing evidence or failed tools require recovery. Reassess at
+existing phase boundaries: settled design normally leads to Sol/medium for
+implementation and Sol/low for mechanical follow-up. Do not spawn, restart,
+split, or repeat a task just to change settings.
 
 The policy is guidance, not a runtime interceptor. Apply recommendations only
-through supported model/effort fields compatible with the selected role and
-context. If a level is unsupported, use another supported level only when it is
-sufficient and allowed for that model; otherwise retain the invocation and report the limitation. Fixed
-role bindings remain authoritative. Do not change models, roles, context modes,
-configuration, or workflows to force a mapping. Installation does not prove the
-actual model or effort a child ran.
+through supported fields compatible with the selected role and context. If a
+level is unavailable, choose another eligible supported level only if sufficient;
+otherwise preserve the invocation and report the limitation. Do not change roles,
+context, configuration, or workflow to force a pair. Installation does not prove
+the actual model or effort used.
 
 ## Install
 

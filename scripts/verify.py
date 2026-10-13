@@ -5,28 +5,10 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-import tomllib
 from pathlib import Path
 
 BLOCK_START = "<!-- CODEX-SUBAGENT-ROUTER:START -->"
 BLOCK_END = "<!-- CODEX-SUBAGENT-ROUTER:END -->"
-EXPECTED_ROLES = {
-    "worker-low": ("gpt-6.1-sol", "low", None),
-    "worker-medium": ("gpt-6.1-sol", "medium", None),
-    "worker-high": ("gpt-6.1-sol", "high", None),
-    "worker-xhigh": ("gpt-6.1-sol", "xhigh", None),
-    "reviewer": ("gpt-6.1-sol", "high", "read-only"),
-    "risk-reviewer": ("gpt-6-astra", "xhigh", "read-only"),
-}
-# Obsolete installed files are errors, not supported execution roles.
-RETIRED_AGENT_ROLES = (
-    "default", "explorer", "mechanical", "owner", "high-risk-owner",
-    "luna-low", "luna-batch", "luna-reasoner", "luna-medium", "luna-high",
-    "luna-xhigh", "luna-max", "terra-explorer", "terra-researcher", "terra-low",
-    "terra-medium", "terra-high", "terra-xhigh", "terra-max", "terra-ultra",
-    "sol-max", "sol-ultra",
-    "sol-low", "sol-medium", "sol-high", "sol-xhigh", "sol-reviewer", "astra-reviewer",
-)
 
 
 def scan_shareable_tree(root: Path) -> list[str]:
@@ -67,37 +49,6 @@ def verify_install(codex_home: Path, global_agents: Path,
                    policy_path: Path | None = None) -> list[str]:
     errors: list[str] = []
     try:
-        config = tomllib.loads((codex_home / "config.toml").read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError) as error:
-        return [f"config:{error}"]
-    agents = config.get("agents", {})
-    if agents.get("enabled") is not True:
-        errors.append("config:agents.enabled")
-    for key in ("default_subagent_model", "default_subagent_reasoning_effort"):
-        if key in agents:
-            errors.append(f"config:agents.{key}")
-    for role in RETIRED_AGENT_ROLES:
-        if (codex_home / "agents" / f"{role}.toml").exists():
-            errors.append(f"agent:{role}:retired")
-    for role, (model, effort, sandbox) in EXPECTED_ROLES.items():
-        path = codex_home / "agents" / f"{role}.toml"
-        try:
-            content = path.read_text(encoding="utf-8")
-            parsed = tomllib.loads(content)
-            if policy_path is not None:
-                expected = (policy_path.parents[1] / "agents" / path.name).read_text(encoding="utf-8")
-                if content != expected:
-                    errors.append(f"agent:{role}:content")
-        except (OSError, tomllib.TOMLDecodeError) as error:
-            errors.append(f"agent:{role}:{error}")
-            continue
-        for key, value in (("name", role), ("model", model),
-                           ("model_reasoning_effort", effort), ("sandbox_mode", sandbox)):
-            if parsed.get(key) != value:
-                errors.append(f"agent:{role}:{key}")
-        if not str(parsed.get("description", "")).strip() or not str(parsed.get("developer_instructions", "")).strip():
-            errors.append(f"agent:{role}:required-fields")
-    try:
         guidance = global_agents.read_text(encoding="utf-8")
         if guidance.count(BLOCK_START) != 1 or guidance.count(BLOCK_END) != 1:
             errors.append("guidance:managed-block")
@@ -129,7 +80,7 @@ def main() -> int:
         for error in errors:
             print(error, file=sys.stderr)
         return 1
-    print("Router source and installed configuration verified; runtime routing is not inferred.")
+    print("Router source and installed guidance verified; runtime model/effort is not inferred.")
     return 0
 
 
